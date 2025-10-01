@@ -33,7 +33,18 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
     super.initState();
     final surveyState = Provider.of<SurveyState>(context, listen: false);
     _coverageInfo = surveyState.coverageInfo;
-    _selectedLevels = _coverageInfo.educationalLevels ?? [];
+    
+    // Inicializar selectedLevels basado en los campos booleanos si existen
+    _selectedLevels = [];
+    if (_coverageInfo.preescolar == true) _selectedLevels.add('Preescolar');
+    if (_coverageInfo.primaria == true) _selectedLevels.add('Primaria');
+    if (_coverageInfo.segundaria == true) _selectedLevels.add('Secundaria');
+    
+    // Si no hay booleanos definidos, usar educationalLevels como fallback
+    if (_selectedLevels.isEmpty && _coverageInfo.educationalLevels != null) {
+      _selectedLevels = _coverageInfo.educationalLevels ?? [];
+    }
+    
     _educationalLevelsController.text = _selectedLevels.join(', ');
   }
 
@@ -48,6 +59,11 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
       _selectedLevels = levels;
       _coverageInfo.educationalLevels = levels;
       _educationalLevelsController.text = levels.join(', ');
+      
+      // Actualizar campos booleanos basados en los niveles seleccionados
+      _coverageInfo.preescolar = levels.contains('Preescolar');
+      _coverageInfo.primaria = levels.contains('Primaria');
+      _coverageInfo.segundaria = levels.contains('Secundaria');
     });
   }
 

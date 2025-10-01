@@ -28,11 +28,8 @@ class _SyncStatusWidgetState extends State<SyncStatusWidget> {
     // Escuchar cambios de conectividad
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
       if (mounted) {
-        // Verificar si hay alguna conexión disponible
-        bool hasConnection = results.any((result) => result != ConnectivityResult.none);
-        
         setState(() {
-          _hasConnectivity = hasConnection;
+          _hasConnectivity = results.any((result) => result != ConnectivityResult.none);
         });
         
         // Si detectamos conectividad y hay pendientes, intentar sincronizar

@@ -2,36 +2,112 @@ import 'dart:io';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/survey_state.dart';
 import '../config/email_config.dart';
 
 class EmailService {
+  // Prevención de envíos duplicados
+  static final Set<String> _sendingInProgress = <String>{};
+  
   /// Envía el archivo ZIP al correo predefinido usando configuración centralizada
   static Future<bool> sendSurveyByEmail({
     required File zipFile,
     String? institutionName,
     String? municipio,
   }) async {
-    // Verificar que la configuración esté lista
-    if (!EmailConfig.isConfigured) {
-      print('Error: Configuración de correo incompleta. Verifique las variables de entorno.');
+    // Crear identificador único para esta encuesta
+    final surveyId = _createSurveyId(institutionName, municipio);
+    
+    // Verificar si ya se está enviando esta encuesta
+    if (_sendingInProgress.contains(surveyId)) {
+      print('⚠️ Ya se está enviando esta encuesta: $surveyId');
       return false;
     }
     
+    // Verificar si ya fue enviada recientemente
+    if (await _wasRecentlySent(surveyId)) {
+      print('⚠️ Esta encuesta ya fue enviada recientemente: $surveyId');
+      return false;
+    }
+    
+    // Marcar como en proceso
+    _sendingInProgress.add(surveyId);
+    
     try {
-      // Configuración SMTP específica para Gmail con STARTTLS
+      // Verificar que la configuración esté lista
+      if (!EmailConfig.isConfigured) {
+        print('❌ Error: Configuración de correo incompleta. Verifique las variables de entorno.');
+        return false;
+      }
+      
+      print('� Iniciando envío de correo para: $institutionName');
+      print('   📍 ID único: $surveyId');
+      
+      // Detectar automáticamente el proveedor de email y configurar SMTP
+      final emailProvider = _getEmailProvider(EmailConfig.senderEmail);
+      
+      // Intentar primero con STARTTLS (puerto 587)
+      bool success = await _attemptSend(
+        zipFile: zipFile,
+        institutionName: institutionName,
+        municipio: municipio,
+        emailProvider: emailProvider,
+        useSSL: false,
+      );
+      
+      // Si falla, intentar con SSL directo (puerto 465)
+      if (!success) {
+        print('🔄 Primer intento falló, probando con SSL...');
+        success = await _attemptSend(
+          zipFile: zipFile,
+          institutionName: institutionName,
+          municipio: municipio,
+          emailProvider: emailProvider,
+          useSSL: true,
+        );
+      }
+      
+      if (success) {
+        // Marcar como enviado exitosamente
+        await _markAsSent(surveyId);
+        print('✅ Correo enviado exitosamente a ${EmailConfig.destinationEmail}');
+      }
+      
+      return success;
+      
+    } catch (e) {
+      print('❌ Error general en envío de correo: $e');
+      return false;
+    } finally {
+      // Liberar el lock independientemente del resultado
+      _sendingInProgress.remove(surveyId);
+    }
+  }
+  
+  /// Intenta enviar con una configuración específica
+  static Future<bool> _attemptSend({
+    required File zipFile,
+    String? institutionName,
+    String? municipio,
+    required Map<String, dynamic> emailProvider,
+    required bool useSSL,
+  }) async {
+    try {
       final smtpServer = SmtpServer(
-        'smtp.gmail.com',
-        port: 587,
+        emailProvider['smtp'],
+        port: useSSL ? (emailProvider['sslPort'] ?? 465) : emailProvider['port'],
         username: EmailConfig.senderEmail,
         password: EmailConfig.senderPassword,
-        ignoreBadCertificate: true,
-        ssl: false,
-        allowInsecure: false,
+        ignoreBadCertificate: useSSL,
+        ssl: useSSL,
+        allowInsecure: useSSL,
       );
 
       print('📧 Configurando SMTP para envío...');
-      print('   - Servidor: smtp.gmail.com:587');
+      print('   - Proveedor: ${emailProvider['name']}');
+      print('   - Servidor: ${emailProvider['smtp']}:${useSSL ? emailProvider['sslPort'] ?? 465 : emailProvider['port']}');
+      print('   - SSL: $useSSL');
       print('   - Usuario: ${EmailConfig.senderEmail}');
       print('   - Destino: ${EmailConfig.destinationEmail}');
       
@@ -43,47 +119,85 @@ class EmailService {
         ..html = _generateEmailHtml(institutionName, municipio)
         ..attachments.add(FileAttachment(zipFile));
 
-      print('📤 Intentando enviar correo...');
+      print('📤 Enviando correo...');
       await send(message, smtpServer);
-      print('✅ Correo enviado exitosamente a ${EmailConfig.destinationEmail}');
+      print('✅ Correo enviado exitosamente');
       return true;
-    } catch (e) {
-      print('❌ Error con configuración principal: $e');
       
-      // Intentar configuración alternativa con SSL directo
-      try {
-        print('🔄 Intentando configuración alternativa (SSL)...');
-        final smtpServerSSL = SmtpServer(
-          'smtp.gmail.com',
-          port: 465,
-          username: EmailConfig.senderEmail,
-          password: EmailConfig.senderPassword,
-          ignoreBadCertificate: true,
-          ssl: true,
-          allowInsecure: true,
-        );
-        
-        final message = Message()
-          ..from = Address(EmailConfig.senderEmail, EmailConfig.senderName)
-          ..recipients.add(EmailConfig.destinationEmail)
-          ..subject = 'Caracterización de Sede Educativa - ${institutionName ?? 'Sede'} - ${municipio ?? ''}'
-          ..text = _generateEmailBody(institutionName, municipio)
-          ..html = _generateEmailHtml(institutionName, municipio)
-          ..attachments.add(FileAttachment(zipFile));
-
-        await send(message, smtpServerSSL);
-        print('✅ Correo enviado exitosamente con SSL a ${EmailConfig.destinationEmail}');
-        return true;
-      } catch (e2) {
-        print('❌ Error también con configuración SSL: $e2');
-        if (e2.toString().contains('SocketException')) {
-          print('🔍 Error de conexión - verificar:');
-          print('   - Conexión a internet estable');
-          print('   - Credenciales de correo correctas');
-          print('   - Contraseña de aplicación (no contraseña normal)');
-        }
-        return false;
+    } catch (e) {
+      print('❌ Error en intento de envío (SSL: $useSSL): $e');
+      if (e.toString().contains('SocketException')) {
+        print('🔍 Error de conexión - verificar conectividad');
+      } else if (e.toString().contains('authentication')) {
+        print('🔍 Error de autenticación - verificar credenciales');
       }
+      return false;
+    }
+  }
+  
+  /// Crea un ID único para la encuesta basado en institución y timestamp
+  static String _createSurveyId(String? institutionName, String? municipio) {
+    final now = DateTime.now();
+    final dayKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final institutionKey = (institutionName ?? 'unknown').replaceAll(RegExp(r'[^\w]'), '').toLowerCase();
+    final municipioKey = (municipio ?? 'unknown').replaceAll(RegExp(r'[^\w]'), '').toLowerCase();
+    
+    return '$dayKey-$institutionKey-$municipioKey';
+  }
+  
+  /// Verifica si la encuesta fue enviada recientemente (últimas 2 horas)
+  static Future<bool> _wasRecentlySent(String surveyId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final sentTimestamp = prefs.getInt('sent_$surveyId');
+      
+      if (sentTimestamp != null) {
+        final sentTime = DateTime.fromMillisecondsSinceEpoch(sentTimestamp);
+        final timeDifference = DateTime.now().difference(sentTime);
+        
+        // Considerar como duplicado si fue enviado en las últimas 2 horas
+        return timeDifference.inHours < 2;
+      }
+      
+      return false;
+    } catch (e) {
+      print('❌ Error verificando envío reciente: $e');
+      return false;
+    }
+  }
+  
+  /// Marca la encuesta como enviada
+  static Future<void> _markAsSent(String surveyId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('sent_$surveyId', DateTime.now().millisecondsSinceEpoch);
+      
+      // Limpiar registros antiguos (más de 7 días)
+      await _cleanupOldRecords();
+    } catch (e) {
+      print('❌ Error marcando como enviado: $e');
+    }
+  }
+  
+  /// Limpia registros de envíos antiguos
+  static Future<void> _cleanupOldRecords() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((key) => key.startsWith('sent_')).toList();
+      final now = DateTime.now();
+      
+      for (final key in keys) {
+        final timestamp = prefs.getInt(key);
+        if (timestamp != null) {
+          final recordTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+          if (now.difference(recordTime).inDays > 7) {
+            await prefs.remove(key);
+            print('🧹 Eliminado registro antiguo: $key');
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Error limpiando registros antiguos: $e');
     }
   }
     /// Método simplificado para envío rápido (solo requiere el archivo ZIP)
@@ -102,10 +216,25 @@ class EmailService {
   
   /// Obtiene el mensaje de ayuda para configurar el correo
   static String getConfigurationHelp() {
-    return 'Para configurar el correo, verifique que el archivo .env contenga:\n'
-           'DESTINATION_EMAIL=correo_destino@ejemplo.com\n'
-           'SENDER_EMAIL=correo_envio@gmail.com\n'
-           'SENDER_PASSWORD=contraseña_aplicacion';
+    return '''
+🔧 Para configurar el envío de correos, asegúrese de tener un archivo .env con:
+
+DESTINATION_EMAIL=correo_destino@ejemplo.com
+SENDER_EMAIL=correo_envio@gmail.com
+SENDER_PASSWORD=contraseña_aplicacion
+SENDER_NAME=Equipo CaracT
+
+📧 Notas importantes:
+- Para Gmail: Use una "Contraseña de aplicación" (no su contraseña normal)
+- Para Outlook: Puede usar su contraseña normal
+- Para otros proveedores: Consulte la documentación específica
+
+🔐 Generar contraseña de aplicación en Gmail:
+1. Vaya a su cuenta de Google
+2. Seguridad → Verificación en 2 pasos
+3. Contraseñas de aplicaciones → Generar
+4. Use esa contraseña en SENDER_PASSWORD
+''';
   }
   
   /// Comparte el archivo usando el sistema nativo de compartir
@@ -135,7 +264,7 @@ Detalles de la caracterización:
 - Fecha de generación: ${DateTime.now().toLocal().toString().split('.')[0]}
 
 El archivo ZIP contiene:
-- Archivo XML con toda la información recopilada
+- Archivo CSV con toda la información recopilada
 - Fotografías de la sede educativa organizadas por categorías
 
 Esta información ha sido recopilada siguiendo los protocolos establecidos para la caracterización de sedes educativas rurales.
@@ -187,7 +316,7 @@ Equipo CaracT Móvil
             
             <h3>📁 Contenido del archivo ZIP:</h3>
             <ul>
-                <li>📄 <strong>Archivo XML</strong> con toda la información recopilada</li>
+                <li>📄 <strong>Archivo CSV</strong> con toda la información recopilada</li>
                 <li>📸 <strong>Fotografías</strong> de la sede educativa organizadas por categorías</li>
             </ul>
             
@@ -231,5 +360,44 @@ Equipo CaracT Móvil
         'help': 'Usa tu email de Yahoo y una contraseña de aplicación'
       },
     };
+  }
+
+  /// Detecta automáticamente el proveedor de email basado en la dirección
+  static Map<String, dynamic> _getEmailProvider(String email) {
+    final domain = email.toLowerCase().split('@').last;
+    
+    switch (domain) {
+      case 'gmail.com':
+        return {
+          'name': 'Gmail',
+          'smtp': 'smtp.gmail.com',
+          'port': 587,
+          'sslPort': 465,
+        };
+      case 'outlook.com':
+      case 'hotmail.com':
+      case 'live.com':
+        return {
+          'name': 'Outlook',
+          'smtp': 'smtp-mail.outlook.com',
+          'port': 587,
+          'sslPort': 465,
+        };
+      case 'yahoo.com':
+        return {
+          'name': 'Yahoo',
+          'smtp': 'smtp.mail.yahoo.com',
+          'port': 587,
+          'sslPort': 465,
+        };
+      default:
+        // Configuración genérica para otros proveedores
+        return {
+          'name': 'Genérico',
+          'smtp': 'smtp.gmail.com', // Fallback a Gmail
+          'port': 587,
+          'sslPort': 465,
+        };
+    }
   }
 }

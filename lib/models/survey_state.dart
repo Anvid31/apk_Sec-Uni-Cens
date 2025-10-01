@@ -20,6 +20,13 @@ class SurveyState extends ChangeNotifier {
   AccessRouteInfo accessRouteInfo = AccessRouteInfo();
   PhotographicRecordInfo photographicRecordInfo = PhotographicRecordInfo();
 
+  // Nuevas propiedades para el estado de envío
+  bool isSubmitted = false;
+  DateTime? submissionDate;
+  String submissionStatus = 'pending'; // 'pending', 'sent', 'error'
+  String? submissionEmail;
+  String? errorMessage;
+
   // Constructor por defecto
   SurveyState();
 
@@ -67,6 +74,35 @@ class SurveyState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Métodos para manejar el estado de envío
+  void markAsSubmitted({String? email}) {
+    isSubmitted = true;
+    submissionDate = DateTime.now();
+    submissionStatus = 'pending';
+    submissionEmail = email;
+    notifyListeners();
+  }
+
+  void markAsSent() {
+    submissionStatus = 'sent';
+    notifyListeners();
+  }
+
+  void markAsError(String error) {
+    submissionStatus = 'error';
+    errorMessage = error;
+    notifyListeners();
+  }
+
+  void resetSubmissionStatus() {
+    isSubmitted = false;
+    submissionDate = null;
+    submissionStatus = 'pending';
+    submissionEmail = null;
+    errorMessage = null;
+    notifyListeners();
+  }
+
   Map<String, dynamic> toJson() => {
     'generalInfo': generalInfo.toJson(),
     'institutionalInfo': institutionalInfo.toJson(),
@@ -77,6 +113,12 @@ class SurveyState extends ChangeNotifier {
     'appliancesInfo': appliancesInfo.toJson(),
     'accessRouteInfo': accessRouteInfo.toJson(),
     'photographicRecordInfo': photographicRecordInfo.toJson(),
+    // Estados de envío
+    'isSubmitted': isSubmitted,
+    'submissionDate': submissionDate?.toIso8601String(),
+    'submissionStatus': submissionStatus,
+    'submissionEmail': submissionEmail,
+    'errorMessage': errorMessage,
   };
 
   // Implementar fromJson para facilitar la conversión desde JSON
@@ -108,6 +150,7 @@ class SurveyState extends ChangeNotifier {
       state.institutionalInfo.locationCoordinates = institutionalInfo['locationCoordinates'];
       state.institutionalInfo.educationalHeadquarters = institutionalInfo['educationalHeadquarters'];
       state.institutionalInfo.contact = institutionalInfo['contact'];
+      state.institutionalInfo.email = institutionalInfo['email'];  
     }
     
     if (json['coverageInfo'] != null) {
@@ -137,6 +180,15 @@ class SurveyState extends ChangeNotifier {
     if (json['electricityInfo'] != null) {
       state.electricityInfo = ElectricityInfo.fromJson(json['electricityInfo'] as Map<String, dynamic>);
     }
+
+    // Estados de envío
+    state.isSubmitted = json['isSubmitted'] ?? false;
+    if (json['submissionDate'] != null) {
+      state.submissionDate = DateTime.parse(json['submissionDate']);
+    }
+    state.submissionStatus = json['submissionStatus'] ?? 'pending';
+    state.submissionEmail = json['submissionEmail'];
+    state.errorMessage = json['errorMessage'];
 
     return state;
   }

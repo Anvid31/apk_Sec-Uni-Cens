@@ -38,10 +38,45 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     _principalNameController.text = _institutionalInfo.principalName ?? '';
     _contactController.text = _institutionalInfo.contact ?? '';
     _emailController.text = _institutionalInfo.email ?? '';
+    
+    // Agregar listeners para auto-guardado
+    _institutionNameController.addListener(_autoSaveData);
+    _headquartersController.addListener(_autoSaveData);
+    _principalNameController.addListener(_autoSaveData);
+    _contactController.addListener(_autoSaveData);
+    _emailController.addListener(_autoSaveData);
+  }
+
+  // Método para guardar automáticamente sin validación ni navegación
+  Future<void> _autoSaveData() async {
+    try {
+      // Actualizar datos de controladores antes de guardar
+      _institutionalInfo.institutionName = _institutionNameController.text;
+      _institutionalInfo.educationalHeadquarters = _headquartersController.text;
+      _institutionalInfo.principalName = _principalNameController.text;
+      _institutionalInfo.contact = _contactController.text;
+      _institutionalInfo.email = _emailController.text;
+      
+      // Actualizar Provider
+      Provider.of<SurveyState>(context, listen: false)
+          .updateInstitutionalInfo(_institutionalInfo);
+      
+      print('💾 Auto-guardado: Datos institucionales actualizados en Provider');
+      print('   - Email: ${_institutionalInfo.email}');
+    } catch (e) {
+      print('⚠️ Error en auto-guardado institucional: $e');
+    }
   }
 
   @override
   void dispose() {
+    // Remover listeners antes de hacer dispose
+    _institutionNameController.removeListener(_autoSaveData);
+    _headquartersController.removeListener(_autoSaveData);
+    _principalNameController.removeListener(_autoSaveData);
+    _contactController.removeListener(_autoSaveData);
+    _emailController.removeListener(_autoSaveData);
+    
     _institutionNameController.dispose();
     _headquartersController.dispose();
     _principalNameController.dispose();
@@ -165,7 +200,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Contacto',
+                  label: 'Telefono del Rector',
                   keyboardType: TextInputType.phone,
                   controller: _contactController,
                   onChanged: (value) => _institutionalInfo.contact = value,
@@ -179,7 +214,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                 const SizedBox(height: 16),
                 
                 CustomTextField(
-                  label: 'Correo Electrónico',
+                  label: 'Correo Electrónico del Rector',
                   keyboardType: TextInputType.emailAddress,
                   controller: _emailController,
                   onChanged: (value) => _institutionalInfo.email = value,
@@ -187,9 +222,35 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                     if (value == null || value.isEmpty) {
                       return 'Este campo es requerido';
                     }
+                    
+                    // Validación básica de formato de email
                     if (!value.contains('@')) {
                       return 'Ingrese un correo electrónico válido';
                     }
+                    
+                    // Validación completa con expresión regular
+                    final emailRegex = RegExp(
+                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                    );
+                    
+                    if (!emailRegex.hasMatch(value)) {
+                      return 'Formato de correo inválido (ej: usuario@ejemplo.com)';
+                    }
+                    
+                    // Verificar que tenga una terminación válida
+                    final validDomains = [
+                      '.com', '.co', '.org', '.net', '.edu', '.gov', 
+                      '.es', '.mx', '.ar', '.cl', '.pe', '.ve', '.ec',
+                      '.gmail.com', '.hotmail.com', '.yahoo.com', '.outlook.com'
+                    ];
+                    
+                    final hasValidDomain = validDomains.any((domain) => 
+                      value.toLowerCase().endsWith(domain));
+                    
+                    if (!hasValidDomain) {
+                      return 'Terminación de correo no válida (ej: .com, .co, .org)';
+                    }
+                    
                     return null;
                   },
                 ),
@@ -207,6 +268,18 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     });
 
     if (_formKey.currentState!.validate()) {
+      // Asegurar que todos los datos de los controladores se guarden en el objeto
+      _institutionalInfo.institutionName = _institutionNameController.text;
+      _institutionalInfo.educationalHeadquarters = _headquartersController.text;
+      _institutionalInfo.principalName = _principalNameController.text;
+      _institutionalInfo.contact = _contactController.text;
+      _institutionalInfo.email = _emailController.text;
+      
+      // Debug: Verificar que el email se está guardando
+      print('✅ Enviando datos institucionales:');
+      print('   - Nombre Institución: ${_institutionalInfo.institutionName}');
+      print('   - Email: ${_institutionalInfo.email}');
+      
       Provider.of<SurveyState>(context, listen: false)
           .updateInstitutionalInfo(_institutionalInfo);
       

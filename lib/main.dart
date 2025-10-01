@@ -7,6 +7,7 @@ import 'views/splash_screen.dart';
 import 'config/theme.dart';
 import 'services/storage_service.dart';
 import 'services/auto_sync_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,14 @@ void main() async {
   } catch (e) {
     print('Error al inicializar sincronización automática: $e');
     // No detener la app si falla AutoSync
+  }
+  
+  try {
+    await NotificationService.initialize();
+    print('Servicio de notificaciones inicializado');
+  } catch (e) {
+    print('Error al inicializar notificaciones: $e');
+    // No detener la app si fallan las notificaciones
   }
   
   // Configurar orientación preferida

@@ -138,12 +138,14 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                       CustomTextField(
                         label: 'Corregimiento',
                         onChanged: (value) => _generalInfo.district = value,
+                        validator: (value) => null, // Campo no obligatorio
                       ),
                       const SizedBox(height: 16),
                       
                       CustomTextField(
                         label: 'Vereda',
                         onChanged: (value) => _generalInfo.village = value,
+                        validator: (value) => null, // Campo no obligatorio
                       ),
                       const SizedBox(height: 16),
                       

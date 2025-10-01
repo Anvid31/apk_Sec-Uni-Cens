@@ -16,6 +16,7 @@ class ElectricityFormPage extends StatefulWidget {
 class _ElectricityFormPageState extends State<ElectricityFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _otherServiceController = TextEditingController();
+  final _observationsController = TextEditingController();
   late ElectricityInfo _electricityInfo;
   bool _showErrors = false;
 
@@ -24,11 +25,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
     super.initState();
     _electricityInfo = Provider.of<SurveyState>(context, listen: false).electricityInfo;
     _otherServiceController.text = _electricityInfo.otherElectricServiceDescription ?? '';
+    _observationsController.text = _electricityInfo.observations ?? '';
   }
 
   @override
   void dispose() {
     _otherServiceController.dispose();
+    _observationsController.dispose();
     super.dispose();
   }  @override
   Widget build(BuildContext context) {
@@ -237,6 +240,8 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                 if (_electricityInfo.hasElectricService == true) ...[
                   const SizedBox(height: 16),
                   _buildElectricServiceTypeCard(),
+                  const SizedBox(height: 16),
+                  _buildObservationsCard(),
                 ],
 
                 const SizedBox(height: 24),
@@ -560,27 +565,39 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             child: Column(
               children: [
                 _buildServiceTypeOption(
-                  'Red eléctrica (Conexión a la red pública)',
+                  'Red eléctrica y contador de energia',
                   Icons.power_outlined,
-                  'Red eléctrica (Conexión a la red pública)',
+                  'Red eléctrica y contador de energia',
                 ),
                 const SizedBox(height: 8),
                 _buildServiceTypeOption(
-                  'Generador eléctrico (Diesel/Gasolina)',
+                  'A través de una vivienda cercana',
+                  Icons.cable,
+                  'A través de una vivienda cercana',
+                ),
+                const SizedBox(height: 8),
+                _buildServiceTypeOption(
+                  'Planta de gasolina o ACPM',
                   Icons.local_gas_station,
-                  'Generador eléctrico',
+                  'Planta de gasolina o ACPM',
                 ),
                 const SizedBox(height: 8),
                 _buildServiceTypeOption(
-                  'Sistema solar',
-                  Icons.wb_sunny,
-                  'Sistema solar',
+                  'Conectado de Manera Irregular',
+                  Icons.local_gas_station,
+                  'Conectado de Manera Irregular',
                 ),
                 const SizedBox(height: 8),
                 _buildServiceTypeOption(
-                  'Otro',
-                  Icons.more_horiz,
-                  'Otro',
+                  'Conectado de Red Construida por la Comunidad',
+                  Icons.local_gas_station,
+                  'Conectado de Red Construida por la Comunidad',
+                ),
+                const SizedBox(height: 8),
+                _buildServiceTypeOption(
+                  'Energias Renovables (Paneles solares, hídrico, biomasa, etc.)',
+                  Icons.local_gas_station,
+                  'Energias Renovables (Paneles solares, hídrico, biomasa, etc.)',
                 ),
                 
                 // Campo de texto para "Otro" - aparece cuando se selecciona Otro
@@ -608,7 +625,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Especifique el tipo de servicio eléctrico:',
+                              'Especifique el tipo:',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -661,6 +678,121 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildObservationsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header de la sección
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.comment,
+                    color: Colors.purple,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Observaciones y Comentarios',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E2E2E),
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Campo de texto
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Agregue cualquier observación o comentario adicional sobre el servicio eléctrico:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: TextFormField(
+                    controller: _observationsController,
+                    onChanged: (value) {
+                      _electricityInfo.observations = value.trim().isEmpty ? null : value.trim();
+                    },
+                    maxLines: 4,
+                    minLines: 3,
+                    textAlignVertical: TextAlignVertical.top,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Ej: Calidad del servicio, cortes frecuentes, horarios de disponibilidad, voltaje, problemas técnicos, etc.',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(16),
+                      hintStyle: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

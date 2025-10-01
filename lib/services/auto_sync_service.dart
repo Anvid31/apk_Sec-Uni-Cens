@@ -2,9 +2,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import '../models/survey_state.dart';
-import 'xml_export_service.dart';
+import 'zip_export_service.dart';
 import 'email_service.dart';
+import 'notification_service.dart';
 
 /// Servicio de sincronización automática simplificado y compatible
 /// 
@@ -18,7 +20,7 @@ class AutoSyncService {
   static const String _pendingSurveysKey = 'pending_surveys';
   static const String _syncStatusKey = 'sync_status';
   static bool _isInitialized = false;
-  static StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  static StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   static Timer? _periodicTimer;
   
   /// Inicializa el servicio de sincronización automática
@@ -74,35 +76,68 @@ class AutoSyncService {
     }
   }
 
-  /// Inicia el monitoreo de conectividad
+  /// Inicia el monitoreo de conectividad mejorado
   static Future<void> _startConnectivityMonitoring() async {
-    final connectivity = Connectivity();
-    
-    _connectivitySubscription = connectivity.onConnectivityChanged.listen(
-      (ConnectivityResult result) async {
-        print('🔄 Cambio de conectividad detectado: $result');
-        
-        if (result != ConnectivityResult.none) {
-          // Hay conectividad, procesar encuestas pendientes
-          print('📶 Conectividad disponible, procesando encuestas...');
-          await _processPendingSurveys();
-        } else {
-          print('📵 Sin conectividad');
-        }
-      },
-      onError: (error) {
-        print('❌ Error en monitoreo de conectividad: $error');
-      },
-    );
+    try {
+      // Cancelar suscripción anterior si existe
+      await _connectivitySubscription?.cancel();
+      
+      final connectivity = Connectivity();
+      
+      // Suscribirse a cambios de conectividad
+      _connectivitySubscription = connectivity.onConnectivityChanged.listen(
+        (List<ConnectivityResult> results) async {
+          print('� Cambio de conectividad detectado: $results');
+          
+          // Verificar si hay alguna conexión disponible
+          final hasConnection = results.any((result) => result != ConnectivityResult.none);
+          
+          if (hasConnection) {
+            print('✅ Conexión detectada, procesando encuestas pendientes...');
+            
+            // Esperar un momento para que la conexión se estabilice
+            await Future.delayed(const Duration(seconds: 3));
+            
+            // Verificar nuevamente la conectividad real
+            if (await _hasInternetConnection()) {
+              // Procesar encuestas pendientes de forma asíncrona
+              Future.microtask(() => _processPendingSurveys());
+            }
+          } else {
+            print('❌ Sin conexión detectada');
+            await _updateSyncStatus({'hasConnectivity': false});
+          }
+        },
+        onError: (error) {
+          print('❌ Error en monitoreo de conectividad: $error');
+        },
+      );
+      
+      // Verificación inicial
+      final initialResult = await connectivity.checkConnectivity();
+      print('🔍 Estado inicial de conectividad: $initialResult');
+      
+    } catch (e) {
+      print('❌ Error iniciando monitoreo de conectividad: $e');
+    }
   }
 
-  /// Inicia verificación periódica
+  /// Mejora en la verificación periódica
   static void _startPeriodicCheck() {
-    _periodicTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+    // Cancelar timer anterior si existe
+    _periodicTimer?.cancel();
+    
+    // Timer cada 10 minutos (más frecuente)
+    _periodicTimer = Timer.periodic(const Duration(minutes: 10), (timer) async {
       try {
+        print('⏰ Verificación periódica: ${DateTime.now()}');
+        
         if (await _hasInternetConnection()) {
-          print('⏰ Verificación periódica: procesando encuestas pendientes');
-          await _processPendingSurveys();
+          final pendingSurveys = await _getPendingSurveys();
+          if (pendingSurveys.isNotEmpty) {
+            print('⏰ Verificación periódica: procesando ${pendingSurveys.length} encuestas pendientes');
+            await _processPendingSurveys();
+          }
         }
       } catch (e) {
         print('❌ Error en verificación periódica: $e');
@@ -159,6 +194,20 @@ class AutoSyncService {
       final prefs = await SharedPreferences.getInstance();
       final pendingSurveys = await _getPendingSurveys();
       
+      // Encontrar la encuesta a remover y obtener su firma antes de eliminarla
+      Map<String, dynamic>? surveyToRemove;
+      for (var survey in pendingSurveys) {
+        if (survey['id'] == surveyId) {
+          surveyToRemove = survey;
+          break;
+        }
+      }
+      
+      // Marcar encuesta como enviada exitosamente antes de removerla
+      if (surveyToRemove != null) {
+        await _markSurveyAsSent(surveyToRemove);
+      }
+      
       // Remover encuesta sincronizada
       pendingSurveys.removeWhere((survey) => survey['id'] == surveyId);
       
@@ -170,10 +219,6 @@ class AutoSyncService {
         'pendingCount': pendingSurveys.length,
         'lastSuccessfulSync': DateTime.now().toIso8601String(),
       });
-      
-      // Marcar encuesta como enviada exitosamente para prevenir duplicados
-      await _markSurveyAsSent(await _getPendingSurveys().then((surveys) => 
-        surveys.firstWhere((s) => s['id'] == surveyId, orElse: () => {})));
       
       print('✅ Encuesta $surveyId marcada como sincronizada');
     } catch (e) {
@@ -229,14 +274,32 @@ class AutoSyncService {
     }
   }
 
-  /// Verifica conectividad a internet
+  /// Verifica conectividad real con ping a servidor
   static Future<bool> _hasInternetConnection() async {
     try {
       final connectivity = Connectivity();
       final result = await connectivity.checkConnectivity();
-      return result != ConnectivityResult.none;
+      
+      // Verificar si hay alguna conexión disponible
+      if (!result.any((connectivity) => connectivity != ConnectivityResult.none)) {
+        return false;
+      }
+      
+      // Verificar conectividad real con HTTP request
+      final client = HttpClient();
+      try {
+        final request = await client.getUrl(Uri.parse('https://www.google.com'))
+          ..followRedirects = false;
+        final response = await request.close();
+        await response.drain();
+        return response.statusCode == 200;
+      } catch (e) {
+        return false;
+      } finally {
+        client.close();
+      }
     } catch (e) {
-      print('❌ Error verificando conectividad: $e');
+      print('❌ Error verificando conectividad real: $e');
       return false;
     }
   }
@@ -310,21 +373,40 @@ class AutoSyncService {
       // Convertir datos JSON a SurveyState
       final surveyState = _createSurveyStateFromJson(surveyData);
       
-      // Generar el archivo ZIP con la encuesta
-      final zipFile = await XmlExportService.createSurveyPackage(surveyState);
+      // Crear archivo ZIP con CSV y fotos
+      final zipFile = await ZipExportService.createZipFile(surveyState);
       
       if (zipFile == null) {
-        throw Exception('Error generando archivo ZIP de la encuesta');
+        throw Exception('Error creando archivo ZIP con fotos');
       }
       
-      // Enviar por email
+      // Enviar ZIP por email
       final success = await EmailService.sendSurveyQuick(zipFile, surveyState);
       
       if (!success) {
-        throw Exception('Error enviando email');
+        throw Exception('Error enviando email con ZIP');
       }
       
-      print('✅ Encuesta enviada exitosamente por email');
+      // Limpiar archivo ZIP temporal
+      try {
+        await zipFile.delete();
+      } catch (e) {
+        print('⚠️ Error eliminando archivo ZIP temporal: $e');
+      }
+      
+      // Enviar notificación push de éxito
+      try {
+        final institutionName = surveyState.institutionalInfo.institutionName ?? 'Institución';
+        
+        await NotificationService.showFormSubmittedNotification(
+          institutionName: institutionName
+        );
+      } catch (notificationError) {
+        print('⚠️ Error enviando notificación push: $notificationError');
+        // No detener el proceso por errores de notificación
+      }
+      
+      print('✅ Encuesta enviada exitosamente por email como ZIP con fotos');
     } catch (e) {
       print('❌ Error enviando encuesta: $e');
       rethrow;
@@ -377,32 +459,31 @@ class AutoSyncService {
       
       if (newData == null) return false;
       
-      // Crear firma única basada en datos críticos de la encuesta
+      // Crear firma única más robusta
       final newSignature = _createSurveySignature(newData);
       
-      // Verificar contra encuestas pendientes
+      // Verificar contra encuestas pendientes con ventana de tiempo más amplia
       for (var survey in pendingSurveys) {
         final existingData = survey['data'] as Map<String, dynamic>?;
         if (existingData != null) {
           final existingSignature = _createSurveySignature(existingData);
           
           if (newSignature == existingSignature) {
-            // Verificar también que no haya sido enviada recientemente
             final existingTimestamp = DateTime.tryParse(survey['timestamp'] ?? '');
             if (existingTimestamp != null) {
               final timeDifference = DateTime.now().difference(existingTimestamp);
               
-              // Si es la misma encuesta y fue creada en los últimos 30 minutos
-              if (timeDifference.inMinutes < 30) {
-                print('🔍 Encuesta duplicada detectada - misma institución y timestamp reciente');
+              // Aumentar ventana de detección a 2 horas
+              if (timeDifference.inHours < 2) {
+                print('🔍 Encuesta duplicada detectada - misma institución en las últimas 2 horas');
                 return true;
               }
             }
           }
         }
       }
-      
-      // Verificar contra encuestas completadas recientemente (usando SharedPreferences)
+
+      // Verificar contra encuestas ya enviadas
       final prefs = await SharedPreferences.getInstance();
       final sentSurveys = prefs.getStringList('sent_surveys_signatures') ?? [];
       
@@ -414,7 +495,7 @@ class AutoSyncService {
       return false;
     } catch (e) {
       print('❌ Error verificando duplicados: $e');
-      return false; // En caso de error, permitir el envío
+      return false;
     }
   }
 

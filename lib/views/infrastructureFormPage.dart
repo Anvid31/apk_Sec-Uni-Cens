@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/infrastructureInfo.dart';
+import '../models/survey_state.dart';
 import '../services/storage_service.dart';
 import '../widgets/layout/enhanced_form_container.dart';
 import '../utils/form_navigator.dart';
@@ -14,7 +16,7 @@ class InfrastructureFormPage extends StatefulWidget {
 
 class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
   final _formKey = GlobalKey<FormState>();
-  late InfrastructureInfo infrastructureInfo;
+  InfrastructureInfo infrastructureInfo = InfrastructureInfo();
   final TextEditingController _proyectosController = TextEditingController();
   final TextEditingController _otrosEspaciosController = TextEditingController();
   final TextEditingController _otroPredioController = TextEditingController();
@@ -23,24 +25,45 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
   @override
   void initState() {
     super.initState();
-    // Siempre inicializar con datos limpios
-    infrastructureInfo = InfrastructureInfo();
-    _proyectosController.clear();
-    _otrosEspaciosController.clear();
-    _otroPredioController.clear();
+    _loadData();
     
-    // Limpiar cualquier dato persistente del almacenamiento
-    _clearStorageData();
-  }
-  Future<void> _clearStorageData() async {
-    try {
-      await StorageService.clearInfrastructureData();
-      // Datos del almacenamiento limpiados
-    } catch (e) {
-      print('Error al limpiar datos del almacenamiento: $e');
-    }
+    // Agregar listeners para auto-guardado cuando cambie el texto
+    _proyectosController.addListener(_autoSaveData);
+    _otrosEspaciosController.addListener(_autoSaveData);
+    _otroPredioController.addListener(_autoSaveData);
   }
 
+  Future<void> _loadData() async {
+    try {
+      final savedData = await StorageService.getInfrastructureInfo();
+      if (savedData != null) {
+        setState(() {
+          infrastructureInfo = savedData;
+          _proyectosController.text = infrastructureInfo.proyectosInfraestructura;
+          _otrosEspaciosController.text = infrastructureInfo.descripcionOtrosEspacios;
+          _otroPredioController.text = infrastructureInfo.descripcionOtroPredio;
+        });
+        print('📋 Datos de infraestructura cargados:');
+        print('   - Propiedad: ${infrastructureInfo.propiedadPredio}');
+        print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
+        print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
+      } else {
+        print('📋 No hay datos previos de infraestructura, usando valores por defecto');
+        // infrastructureInfo ya está inicializada con valores por defecto
+        _proyectosController.clear();
+        _otrosEspaciosController.clear();
+        _otroPredioController.clear();
+      }
+    } catch (e) {
+      print('Error al cargar datos de infraestructura: $e');
+      // En caso de error, mantener los valores por defecto ya inicializados
+      if (mounted) {
+        _proyectosController.clear();
+        _otrosEspaciosController.clear();
+        _otroPredioController.clear();
+      }
+    }
+  }
   Future<void> _clearFormData() async {
     // Mostrar diálogo de confirmación
     final bool? confirmed = await showDialog<bool>(
@@ -195,11 +218,33 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     }
 
     if (isValid) {
+      // Asegurar que todos los datos del formulario se guarden en el objeto
       infrastructureInfo.proyectosInfraestructura = _proyectosController.text;
       infrastructureInfo.descripcionOtrosEspacios = _otrosEspaciosController.text;
       infrastructureInfo.descripcionOtroPredio = _otroPredioController.text;
-      try {        await StorageService.saveInfrastructureInfo(infrastructureInfo);
+      
+      try {        
+        // Actualizar Provider como las otras páginas
+        Provider.of<SurveyState>(context, listen: false)
+            .updateInfrastructureInfo(infrastructureInfo);
+        
+        // También guardar en StorageService para persistencia
+        await StorageService.saveInfrastructureInfo(infrastructureInfo);
+        print('✅ Datos de infraestructura guardados correctamente en Provider y Storage');
+        print('   - Propiedad del predio: ${infrastructureInfo.propiedadPredio}');
+        
+        // Debug: Verificar cantidades guardadas
+        print('🔍 Cantidades guardadas:');
+        print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
+        print('   - Comedor: ${infrastructureInfo.hasComedor} (${infrastructureInfo.cantidadComedor})');
+        print('   - Cocina: ${infrastructureInfo.hasCocina} (${infrastructureInfo.cantidadCocina})');
+        print('   - Salón Reuniones: ${infrastructureInfo.hasSalonReuniones} (${infrastructureInfo.cantidadSalonReuniones})');
+        print('   - Habitaciones: ${infrastructureInfo.hasHabitaciones} (${infrastructureInfo.cantidadHabitaciones})');
+        print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
+        print('   - Otros: ${infrastructureInfo.hasOtros} (${infrastructureInfo.cantidadOtros})');
+        
         if (mounted) {
+ 
           // Usar el nuevo sistema de navegación con transiciones suaves
           FormNavigator.pushForm(
             context,
@@ -231,13 +276,40 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
         }
       }
     }
-  }  @override
+  }
+
+  // Método para guardar automáticamente sin validación ni navegación
+  Future<void> _autoSaveData() async {
+    try {
+      // Actualizar datos de controladores antes de guardar
+      infrastructureInfo.proyectosInfraestructura = _proyectosController.text;
+      infrastructureInfo.descripcionOtrosEspacios = _otrosEspaciosController.text;
+      infrastructureInfo.descripcionOtroPredio = _otroPredioController.text;
+      
+      // Actualizar Provider como las otras páginas
+      Provider.of<SurveyState>(context, listen: false)
+          .updateInfrastructureInfo(infrastructureInfo);
+      
+      // También guardar en StorageService para persistencia
+      await StorageService.saveInfrastructureInfo(infrastructureInfo);
+      print('💾 Auto-guardado: Datos actualizados en Provider y Storage');
+    } catch (e) {
+      print('⚠️ Error en auto-guardado: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return EnhancedFormContainer(
       title: 'Infraestructura',
       subtitle: 'Información sobre espacios y proyectos',
       currentStep: 4,
-      onPrevious: () => FormNavigator.popForm(context),
+      onPrevious: () {
+        // Guardar el estado actual antes de navegar
+        Provider.of<SurveyState>(context, listen: false)
+            .updateInfrastructureInfo(infrastructureInfo);
+        FormNavigator.popForm(context);
+      },
       onNext: _saveData,
       transitionType: FormTransitionType.slideScale,
       child: SingleChildScrollView(
@@ -530,6 +602,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
             break;
         }
       });
+      // Guardar automáticamente cuando se actualiza el valor booleano
+      _autoSaveData();
     }
 
     void setQuantity(int quantity) {
@@ -544,6 +618,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           case 'hasOtros': infrastructureInfo.cantidadOtros = quantity; break;
         }
       });
+      // Guardar automáticamente cuando se actualiza la cantidad
+      _autoSaveData();
     }
 
     final isSelected = getValue();
@@ -635,12 +711,6 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               child: Row(
                 children: [
                   const SizedBox(width: 32), // Alineación con el contenido superior
-                  Icon(
-                    Icons.numbers,
-                    color: Colors.green.shade600,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
                   Text(
                     'Cantidad:',
                     style: TextStyle(
@@ -650,91 +720,97 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.green.shade300,
-                          width: 1,
-                        ),
-                        color: Colors.white,
+                  Container(
+                    width: 120, // Ancho fijo para mejor control
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.shade300,
+                        width: 1,
                       ),
-                      child: Row(
-                        children: [
-                          // Botón disminuir
-                          InkWell(
-                            onTap: quantity > 0 ? () => setQuantity(quantity - 1) : null,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                              bottomLeft: Radius.circular(8),
+                      color: Colors.white,
+                    ),
+                    child: Row(
+                      children: [
+                        // Botón disminuir
+                        InkWell(
+                          onTap: quantity > 0 ? () => setQuantity(quantity - 1) : null,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            bottomLeft: Radius.circular(8),
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: quantity > 0 
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(8),
+                                bottomLeft: Radius.circular(8),
+                              ),
                             ),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: quantity > 0 
-                                    ? Colors.green.withValues(alpha: 0.1)
-                                    : Colors.grey.withValues(alpha: 0.1),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(8),
-                                  bottomLeft: Radius.circular(8),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.remove,
-                                size: 16,
-                                color: quantity > 0 
-                                    ? Colors.green.shade600
-                                    : Colors.grey.shade400,
-                              ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 16,
+                              color: quantity > 0 
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade400,
                             ),
                           ),
-                          
-                          // Campo numérico
-                          Expanded(
-                            child: Container(
-                              alignment: Alignment.center,
+                        ),
+                        
+                        // Campo numérico centrado con espacio suficiente
+                        Expanded(
+                          child: Container(
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
                               child: Text(
                                 quantity.toString(),
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.green.shade700,
                                 ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
                               ),
                             ),
                           ),
-                          
-                          // Botón aumentar
-                          InkWell(
-                            onTap: () => setQuantity(quantity + 1),
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
+                        ),
+                        
+                        // Botón aumentar
+                        InkWell(
+                          onTap: () => setQuantity(quantity + 1),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(8),
+                            bottomRight: Radius.circular(8),
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(8),
+                                bottomRight: Radius.circular(8),
+                              ),
                             ),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.1),
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(8),
-                                  bottomRight: Radius.circular(8),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.add,
-                                size: 16,
-                                color: Colors.green.shade600,
-                              ),
+                            child: Icon(
+                              Icons.add,
+                              size: 16,
+                              color: Colors.green.shade600,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
+                  const Spacer(), // Empuja el contenido hacia la izquierda
                 ],
               ),
             ),
@@ -1193,6 +1269,11 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
 
   @override
   void dispose() {
+    // Remover listeners antes de hacer dispose
+    _proyectosController.removeListener(_autoSaveData);
+    _otrosEspaciosController.removeListener(_autoSaveData);
+    _otroPredioController.removeListener(_autoSaveData);
+    
     _proyectosController.dispose();
     _otrosEspaciosController.dispose();
     _otroPredioController.dispose();

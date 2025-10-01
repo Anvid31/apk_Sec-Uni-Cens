@@ -1,11 +1,7 @@
 class CoverageInfo {
-  int? preescolar;
-  int? primaria;
-  int? segundaria;
-  int? media;
-  int? ciclos;
-  int? sabatina;
-  int? dominical;
+  bool? preescolar;
+  bool? primaria;
+  bool? segundaria;
   int? totalStudents;
   List<String>? educationalLevels; // Agregando propiedad faltante
   int? boysCount; // Agregando propiedad faltante
@@ -16,10 +12,6 @@ class CoverageInfo {
     this.preescolar,
     this.primaria,
     this.segundaria,
-    this.media,
-    this.ciclos,
-    this.sabatina,
-    this.dominical,
     this.totalStudents,
     this.educationalLevels, // Agregando al constructor
     this.boysCount, // Agregando al constructor
@@ -31,10 +23,6 @@ class CoverageInfo {
     'preescolar': preescolar,
     'primaria': primaria,
     'segundaria': segundaria,
-    'media': media,
-    'ciclos': ciclos,
-    'sabatina': sabatina,
-    'dominical': dominical,
     'totalStudents': totalStudents,
     'educationalLevels': educationalLevels, // Agregando al toJson
     'boysCount': boysCount, // Agregando al toJson
@@ -47,10 +35,6 @@ class CoverageInfo {
       preescolar: json['preescolar'],
       primaria: json['primaria'],
       segundaria: json['segundaria'],
-      media: json['media'],
-      ciclos: json['ciclos'],
-      sabatina: json['sabatina'],
-      dominical: json['dominical'],
       totalStudents: json['totalStudents'],
       educationalLevels: json['educationalLevels'] != null ? List<String>.from(json['educationalLevels']) : null, // Agregando fromJson
       boysCount: json['boysCount'],
@@ -60,13 +44,9 @@ class CoverageInfo {
   }
 
   CoverageInfo copyWith({
-    int? preescolar,
-    int? primaria,
-    int? segundaria,
-    int? media,
-    int? ciclos,
-    int? sabatina,
-    int? dominical,
+    bool? preescolar,
+    bool? primaria,
+    bool? segundaria,
     int? totalStudents,
     List<String>? educationalLevels, // Agregando a copyWith
     int? boysCount, // Agregando a copyWith
@@ -77,10 +57,6 @@ class CoverageInfo {
       preescolar: preescolar ?? this.preescolar,
       primaria: primaria ?? this.primaria,
       segundaria: segundaria ?? this.segundaria,
-      media: media ?? this.media,
-      ciclos: ciclos ?? this.ciclos,
-      sabatina: sabatina ?? this.sabatina,
-      dominical: dominical ?? this.dominical,
       totalStudents: totalStudents ?? this.totalStudents,
       educationalLevels: educationalLevels ?? this.educationalLevels, // Agregando a copyWith
       boysCount: boysCount ?? this.boysCount, // Agregando a copyWith

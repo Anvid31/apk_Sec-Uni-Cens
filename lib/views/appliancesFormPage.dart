@@ -560,107 +560,169 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Botón agregar electrodoméstico
-                Container(
-                  margin: const EdgeInsets.only(bottom: 24),
-                  child: Material(
-                    elevation: 0,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: _showAddApplianceDialog,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
+                // Lista de electrodomésticos
+                if (_appliancesInfo.appliances.isEmpty)
+                  Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(40),
                         decoration: BoxDecoration(
-                          border: Border.all(
-                            color: const Color(0xFF4CAF50),
-                            width: 2,
-                          ),
+                          color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(16),
-                          color: Colors.white,
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4CAF50),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 18,
+                            Icon(
+                              Icons.electrical_services_outlined,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No hay electrodomésticos registrados',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade600,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Flexible(
-                              child: Text(
-                                'Agregar Electrodoméstico',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4CAF50),
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Toca el botón "Agregar Electrodoméstico" para empezar',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade500,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-
-                // Lista de electrodomésticos
-                if (_appliancesInfo.appliances.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(40),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                        width: 1,
+                      const SizedBox(height: 24),
+                      // Botón agregar electrodoméstico (cuando la lista está vacía)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        child: Material(
+                          elevation: 0,
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: _showAddApplianceDialog,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFF4CAF50),
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.white,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4CAF50),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Flexible(
+                                    child: Text(
+                                      'Agregar Electrodoméstico',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF4CAF50),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.electrical_services_outlined,
-                          size: 48,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No hay electrodomésticos registrados',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Toca el botón "Agregar Electrodoméstico" para empezar',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                    ],
                   )
                 else
                   ..._appliancesInfo.appliances.map((appliance) => 
                     _buildApplianceItem(appliance),
                   ).toList(),
+                
+                // Botón agregar electrodoméstico (al final de la lista)
+                if (_appliancesInfo.appliances.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 16, bottom: 24),
+                    child: Material(
+                      elevation: 0,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _showAddApplianceDialog,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF4CAF50),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4CAF50),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Flexible(
+                                child: Text(
+                                  'Agregar Electrodoméstico',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF4CAF50),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 
                 const SizedBox(height: 80), // Espacio para los botones fijos
               ],

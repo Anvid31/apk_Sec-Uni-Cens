@@ -42,8 +42,6 @@ class AppliancesInfo {
     ApplianceItem(name: 'Equipo de Sonido'),
     ApplianceItem(name: 'Lavadora'),
     ApplianceItem(name: 'Impresora'),
-    ApplianceItem(name: 'Bomba Biodigesto'),
-    ApplianceItem(name: 'Estabilizador'),
   ];
 
   Map<String, dynamic> toJson() => {

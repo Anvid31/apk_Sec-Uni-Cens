@@ -21,7 +21,7 @@ Aplicación Flutter para caracterización de sedes educativas CENS (Centros Educ
 
 ### 📤 Exportación y Envío
 
-- Exportación de datos en formato XML + ZIP
+- Exportación de datos en formato CSV+ ZIP
 - Envío automático por correo electrónico
 - Compartir archivos nativamente
 - Almacenamiento local con Hive
@@ -177,7 +177,7 @@ El sistema de sincronización automática garantiza que **ningún formulario se 
 │  │ Compartir│Email│Guardar │    │
 │  └─────────────────────────┘    │
 └─────────────────────────────────┘
-```
+```****
 
 #### Confirmación Inteligente
 
@@ -247,7 +247,7 @@ lib/
 │   ├── background_sync_service.dart  # 🆕 Sincronización automática
 │   ├── storage_service.dart          # Almacenamiento local (Hive)
 │   ├── email_service.dart            # Envío de correos
-│   ├── xml_export_service.dart       # Exportación XML + ZIP
+│   ├── xml_export_service.dart       # Exportación CSV+ ZIP
 │   └── location_service.dart         # Servicios de ubicación
 ├── utils/                     # Utilidades y helpers
 │   ├── form_navigator.dart    # Navegación entre formularios
@@ -301,7 +301,7 @@ lib/
 ### 📤 Exportación y Comunicación
 
 - **Mailer** - Envío de correos electrónicos SMTP
-- **XML** - Generación de archivos XML estructurados
+- **XML** - Generación de archivos CSVestructurados
 - **Archive** - Creación de archivos ZIP
 - **Share Plus** - Compartir archivos nativamente
 
@@ -428,7 +428,7 @@ Para soporte técnico o reportar problemas, contacte al equipo de desarrollo.
 🆕 lib/utils/permission_helper.dart
 📝 lib/views/observationsFormPage.dart (actualizada)
 📝 lib/widgets/layout/enhanced_form_container.dart (con FAB)
-📝 android/app/src/main/AndroidManifest.xml (permisos)
+📝 android/app/src/main/AndroidManifest.CSV(permisos)
 📝 pubspec.yaml (nueva dependencia)
 ```
 
