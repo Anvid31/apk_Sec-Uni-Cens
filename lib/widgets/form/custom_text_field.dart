@@ -100,14 +100,27 @@ class _CustomTextFieldState extends State<CustomTextField> with SingleTickerProv
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: _isFocused ? 15 : 14,
-                fontWeight: FontWeight.w600,
-                color: _isFocused 
-                    ? const Color(0xFF4CAF50)
-                    : const Color(0xFF424242),
+            child: RichText(
+              text: TextSpan(
+                text: widget.label,
+                style: TextStyle(
+                  fontSize: _isFocused ? 15 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: _isFocused 
+                      ? const Color(0xFF4CAF50)
+                      : const Color(0xFF424242),
+                  fontFamily: 'Roboto', // Ensure font consistency
+                ),
+                children: [
+                  if (widget.validator != null)
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),

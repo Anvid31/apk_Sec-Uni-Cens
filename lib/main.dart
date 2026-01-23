@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/survey_state.dart';
-import 'views/splash_screen.dart';
+import 'views/selection_page.dart'; // Cambio: Importamos SelectionPage
 import 'config/theme.dart';
 import 'services/storage_service.dart';
 import 'services/auto_sync_service.dart';
@@ -71,7 +71,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CENS App',
       theme: AppTheme.light,
-      home: const SplashScreen(),
+      home: const SelectionPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

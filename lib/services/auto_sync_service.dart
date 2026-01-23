@@ -7,6 +7,7 @@ import '../models/survey_state.dart';
 import 'zip_export_service.dart';
 import 'email_service.dart';
 import 'notification_service.dart';
+import 'mongo_service.dart';
 
 /// Servicio de sincronización automática simplificado y compatible
 /// 
@@ -365,6 +366,15 @@ class AutoSyncService {
     try {
       print('📤 Enviando encuesta: ${surveyData['id']}');
       
+      // --- CAMBIO A BASE DE DATOS MONGODB ---
+      
+      // Guardar en MongoDB
+      await MongoService.saveSurvey(surveyData);
+      
+      // Opcional: Mantener lógica de email o eliminarla
+      // Para este caso, reemplazamos el envío principal por la base de datos
+      
+      /* Lógica de Email Anterior (Comentada)
       // Verificar configuración de email
       if (!EmailService.isEmailConfigured()) {
         throw Exception('Configuración de correo incompleta. Configure el correo en el archivo .env');
@@ -393,10 +403,16 @@ class AutoSyncService {
       } catch (e) {
         print('⚠️ Error eliminando archivo ZIP temporal: $e');
       }
+      */
       
       // Enviar notificación push de éxito
       try {
-        final institutionName = surveyState.institutionalInfo.institutionName ?? 'Institución';
+        // Obtenemos el nombre de la institución del mapa directamente
+        final institutionalInfo = (surveyData['data'] != null && surveyData['data']['institutionalInfo'] != null) 
+            ? surveyData['data']['institutionalInfo'] as Map<String, dynamic>
+            : (surveyData['institutionalInfo'] as Map<String, dynamic>?);
+
+        final institutionName = institutionalInfo?['institutionName'] ?? 'Institución';
         
         await NotificationService.showFormSubmittedNotification(
           institutionName: institutionName
@@ -406,7 +422,7 @@ class AutoSyncService {
         // No detener el proceso por errores de notificación
       }
       
-      print('✅ Encuesta enviada exitosamente por email como ZIP con fotos');
+      print('✅ Encuesta enviada exitosamente a MongoDB');
     } catch (e) {
       print('❌ Error enviando encuesta: $e');
       rethrow;

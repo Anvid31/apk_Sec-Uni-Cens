@@ -1,0 +1,145 @@
+import '../models/furniture_item.dart';
+
+class FurnitureCatalog {
+  static List<FurnitureItem> getItems() {
+    final items = [
+      FurnitureItem(
+        id: '1',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '117',
+        name: 'Puesto de trabajo primera infancia',
+        description: '1 Silla puesto de trabajo primera infancia, 1 Mesa puesto de trabajo básica primeria infancia.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla puesto de trabajo primera infancia', quantity: 0),
+          FurnitureSubItem(name: 'Mesa puesto de trabajo básica primeria infancia', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '2',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '118',
+        name: 'Puesto de Trabajo Aula Primaria',
+        description: '1 Silla puesto de trabajo primaria, 1 Mesa puesto de trabajo básica primaria.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla puesto de trabajo primaria', quantity: 0),
+          FurnitureSubItem(name: 'Mesa puesto de trabajo básica primaria', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '3',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '119',
+        name: 'Puesto de Trabajo Aula Secundaria',
+        description: '1 Silla puesto de trabajo secundaria, 1 Mesa puesto de trabajo básica secundaria.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla puesto de trabajo secundaria', quantity: 0),
+          FurnitureSubItem(name: 'Mesa puesto de trabajo básica secundaria', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '4',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '121',
+        name: 'Puesto de Trabajo Biblioteca Opción 1-Predeterminada',
+        description: '4 Silla interlocutora biblioteca - bilinguismo, 1 Mesa de trabajo consulta lectura biblioteca.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla interlocutora biblioteca - bilinguismo', quantity: 0),
+          FurnitureSubItem(name: 'Mesa de trabajo consulta lectura biblioteca', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '5',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '126',
+        name: 'Puesto de Trabajo Docente',
+        description: '1 Silla puesto de trabajo docente, 1 Mesa puesto docente.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla puesto de trabajo docente', quantity: 0),
+          FurnitureSubItem(name: 'Mesa puesto docente', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '6',
+        category: 'Mobiliario Escolar',
+        type: 'CONJUNTO',
+        code: '131',
+        name: 'Puesto de Trabajo Preescolar',
+        description: '3 Silla puesto de trabajo preescolar, 1 Mesa puesto de trabajo preescolar.',
+        subItems: [
+          FurnitureSubItem(name: 'Silla puesto de trabajo preescolar', quantity: 0),
+          FurnitureSubItem(name: 'Mesa puesto de trabajo preescolar', quantity: 0),
+        ],
+      ),
+      FurnitureItem(
+        id: '7',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '151',
+        name: 'Módulo de biblioteca de 1,30 mts.',
+        description: 'Estante de biblioteca 1,30 mts administracion y resguardo de textos en la biblioteca',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '8',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '153',
+        name: 'Mueble de almacenamiento aulas',
+        description: 'Mueble de almacenamiento aula con tres cajones',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '9',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '165',
+        name: 'Tablero',
+        description: 'Tablero para marcador borrable',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '10',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '166',
+        name: 'Tablero Alta resistencia humedad',
+        description: 'Tablero con materiales que permite resistencia a la humedad en aulas básicas y especializadas.',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '11',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '167',
+        name: 'Tablero móvil',
+        description: 'Tablero movil dos caras',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '12',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '172',
+        name: 'Papelera',
+        description: 'Papelera par el uso en oficinas administrativas, sala docente, biblioteca, bilingüismo y recepción',
+        subItems: [],
+      ),
+      FurnitureItem(
+        id: '13',
+        category: 'Mobiliario Escolar',
+        type: 'PRODUCTO',
+        code: '174',
+        name: 'Tándem tres (3) canecas aulas',
+        description: 'Tándem canencas aula manejo de residuos solidos.',
+        subItems: [],
+      ),
+    ];
+
+    return items;
+  }
+}

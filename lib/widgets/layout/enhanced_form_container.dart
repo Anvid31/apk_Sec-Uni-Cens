@@ -20,6 +20,11 @@ class EnhancedFormContainer extends StatefulWidget {
   final Color? primaryColor;
   final FormTransitionType transitionType;
   final Widget? floatingActionButton;
+  final bool customScrolling;
+  final bool showProgressBar;
+  final bool showNavigationButtons;
+  final bool showDragHandle;
+  final EdgeInsets? contentPadding;
 
   const EnhancedFormContainer({
     super.key,
@@ -38,6 +43,11 @@ class EnhancedFormContainer extends StatefulWidget {
     this.primaryColor,
     this.transitionType = FormTransitionType.slideScale,
     this.floatingActionButton,
+    this.customScrolling = false,
+    this.showProgressBar = true,
+    this.showNavigationButtons = true,
+    this.showDragHandle = true,
+    this.contentPadding,
   });
 
   @override
@@ -127,7 +137,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
       ),
       
       // Botones de navegación mejorados
-      bottomNavigationBar: EnhancedFormNavigationButtons(
+      bottomNavigationBar: widget.showNavigationButtons ? EnhancedFormNavigationButtons(
         onPrevious: widget.onPrevious,
         onNext: widget.onNext,
         nextLabel: widget.nextLabel,
@@ -136,7 +146,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
         isLastStep: widget.isLastStep,
         currentStep: widget.currentStep,
         totalSteps: widget.totalSteps,
-      ),
+      ) : null,
       
       // FloatingActionButton opcional
       floatingActionButton: widget.floatingActionButton,
@@ -236,15 +246,17 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                         ],
                       ),
                       
-                      const SizedBox(height: 24),
-                      
-                      // Barra de progreso mejorada
-                      _buildEnhancedProgressBar(),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Indicadores de paso
-                      _buildStepIndicators(),
+                      if (widget.showProgressBar) ...[
+                        const SizedBox(height: 24),
+                        
+                        // Barra de progreso mejorada
+                        _buildEnhancedProgressBar(),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Indicadores de paso
+                        _buildStepIndicators(),
+                      ],
                     ],
                   ),
                 ),
@@ -419,6 +431,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                 child: Column(
                   children: [
                     // Indicador visual de drag
+                    if (widget.showDragHandle)
                     Container(
                       width: 40,
                       height: 4,
@@ -429,13 +442,18 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                       ),
                     ),
                     
-                    // Contenido scrolleable
+                    // Contenido
                     Expanded(
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                        child: widget.child,
-                      ),
+                      child: widget.customScrolling
+                          ? Padding(
+                              padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                              child: widget.child,
+                            )
+                          : SingleChildScrollView(
+                              physics: const ClampingScrollPhysics(),
+                              padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                              child: widget.child,
+                            ),
                     ),
                   ],
                 ),
