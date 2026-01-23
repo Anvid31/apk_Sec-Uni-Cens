@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import '../utils/image_helper.dart';
 
 class MongoService {
-  static const String _collectionName = 'surveys';
+  static const String _defaultCollectionName = 'surveys';
   static Db? _db;
 
   /// Conecta a la base de datos MongoDB
@@ -35,24 +34,47 @@ class MongoService {
         await connect();
       }
 
-      final collection = _db!.collection(_collectionName);
+      // Determinar colección basada en el tipo de formulario
+      String targetCollection = _defaultCollectionName;
+      if (surveyData.containsKey('tipoFormulario')) {
+        if (surveyData['tipoFormulario'] == 'mobiliario') {
+          targetCollection = 'inventario_mobiliario'; // Colección también en español
+        }
+        // Agrega más tipos aquí si es necesario
+      } else if (surveyData.containsKey('formType')) {
+         if (surveyData['formType'] == 'furniture') {
+          targetCollection = 'inventario_mobiliario';
+        }
+      }
+
+      final collection = _db!.collection(targetCollection);
 
       // Copia profunda para no modificar el objeto original en memoria
       final Map<String, dynamic> dataToSave = json.decode(json.encode(surveyData));
       
       // Procesar imágenes: Convertir rutas locales a datos Base64
-      // Se asume que los datos de la encuesta están en 'data' (estructura de FormSubmissionService)
-      if (dataToSave.containsKey('data') && dataToSave['data'] is Map) {
+      // Se asume que los datos de la encuesta están en 'datos' (antes 'data')
+      if (dataToSave.containsKey('datos') && dataToSave['datos'] is Map) {
+          var innerData = dataToSave['datos'];
+          // Procesar imágenes de infraestructura (survey)
+          await _processImages(innerData);
+          // Procesar imágenes de mobiliario (furniture)
+          await _processImagesGeneric(innerData, 'fotos'); 
+      } else if (dataToSave.containsKey('data') && dataToSave['data'] is Map) {
+          // Soporte retrocompatibilidad
           var innerData = dataToSave['data'];
           await _processImages(innerData);
+          await _processImagesGeneric(innerData, 'photos'); 
       } else {
         // Estructura directa (si aplica)
         await _processImages(dataToSave);
+        await _processImagesGeneric(dataToSave, 'fotos'); // Intenta español primero
+        await _processImagesGeneric(dataToSave, 'photos');
       }
 
       // Agregar timestamp de subida si no existe
-      if (!dataToSave.containsKey('uploadedAt')) {
-        dataToSave['uploadedAt'] = DateTime.now().toIso8601String();
+      if (!dataToSave.containsKey('fechaSubida')) {
+        dataToSave['fechaSubida'] = DateTime.now().toIso8601String();
       }
 
       await collection.insert(dataToSave);
@@ -66,9 +88,17 @@ class MongoService {
 
   /// Procesa la sección de photographicRecordInfo para incrustar las imágenes
   static Future<void> _processImages(Map<String, dynamic> data) async {
-    if (!data.containsKey('photographicRecordInfo')) return;
+    // Buscar llave en español o inglés
+    String keyName = 'infoRegistroFotografico';
+    if (!data.containsKey(keyName)) {
+      if (data.containsKey('photographicRecordInfo')) {
+        keyName = 'photographicRecordInfo';
+      } else {
+        return;
+      }
+    }
 
-    final photos = data['photographicRecordInfo'];
+    final photos = data[keyName];
     if (photos is! Map) return;
 
     final processedPhotos = <String, dynamic>{};
@@ -109,7 +139,48 @@ class MongoService {
     }
     
     // Reemplazar la información original con la procesada (data es referencia al mapa dentro de dataToSave)
-    data['photographicRecordInfo'] = processedPhotos;
+    data[keyName] = processedPhotos;
+  }
+
+  /// Procesa un campo de imágenes genérico dada una clave
+  static Future<void> _processImagesGeneric(Map<String, dynamic> data, String keyName) async {
+    if (!data.containsKey(keyName)) return;
+
+    final photos = data[keyName];
+    if (photos is! Map) return;
+
+    final processedPhotos = <String, dynamic>{};
+
+    for (var key in photos.keys) {
+      final path = photos[key];
+      if (path == null) {
+        processedPhotos[key] = null;
+        continue;
+      }
+      
+      if (path is String && path.isNotEmpty) {
+        try {
+          final base64Image = await ImageHelper.processImageForDb(path);
+          if (base64Image != null) {
+             processedPhotos[key] = {
+               'fileName': path.split('/').last,
+               'imagedata': base64Image,
+               'originalPath': path,
+               'contentType': 'image/jpeg' 
+             };
+          } else {
+             processedPhotos[key] = {
+               'error': 'Error procesando imagen', 
+               'originalPath': path
+             };
+          }
+        } catch (e) {
+          print('⚠️ Error procesando imagen genérica $key: $e');
+        }
+      }
+    }
+    
+    data[keyName] = processedPhotos;
   }
   
   static Future<void> close() async {

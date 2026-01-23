@@ -408,11 +408,21 @@ class AutoSyncService {
       // Enviar notificación push de éxito
       try {
         // Obtenemos el nombre de la institución del mapa directamente
-        final institutionalInfo = (surveyData['data'] != null && surveyData['data']['institutionalInfo'] != null) 
-            ? surveyData['data']['institutionalInfo'] as Map<String, dynamic>
-            : (surveyData['institutionalInfo'] as Map<String, dynamic>?);
+        Map<String, dynamic>? institutionalInfo;
+        
+        if (surveyData['datos'] != null && surveyData['datos']['informacionInstitucional'] != null) {
+           institutionalInfo = surveyData['datos']['informacionInstitucional'] as Map<String, dynamic>;
+        } else if (surveyData['data'] != null && surveyData['data']['institutionalInfo'] != null) {
+           institutionalInfo = surveyData['data']['institutionalInfo'] as Map<String, dynamic>;
+        } else {
+           institutionalInfo = (surveyData['institutionalInfo'] as Map<String, dynamic>?);
+        }
 
-        final institutionName = institutionalInfo?['institutionName'] ?? 'Institución';
+        final institutionName = institutionalInfo?['institutionName'] 
+                             ?? institutionalInfo?['nombreInstitucion'] 
+                             ?? surveyData['nombreInstitucion']
+                             ?? surveyData['institutionName'] 
+                             ?? 'Institución';
         
         await NotificationService.showFormSubmittedNotification(
           institutionName: institutionName

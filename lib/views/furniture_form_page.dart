@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/furniture_item.dart';
 import '../data/furniture_catalog.dart';
-import '../services/form_submission_service.dart';
+import '../services/auto_sync_service.dart'; // Importar AutoSyncService
 import '../widgets/layout/enhanced_form_container.dart';
+import '../widgets/form/location_dropdown.dart';
+import '../utils/location_data.dart';
 import '../widgets/form/location_field.dart';
 import '../widgets/form/custom_text_field.dart';
 import '../widgets/form/custom_dropdown_field.dart';
@@ -41,6 +43,9 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
   
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
+  
+  // Variables para Ubicación (Departamento/Municipio)
+  List<String> _municipalities = [];
   
   // Variables para selectores
   String? _selectedAccessType;
@@ -119,6 +124,18 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
     _tabController = TabController(length: 3, vsync: this);
 
     _searchController.addListener(_onSearchChanged);
+  }
+
+  void _updateMunicipalities(String? department) {
+    if (department == null) return;
+    setState(() {
+      _municipalities = LocationData.getMunicipalities(department);
+      // Si el municipio actual no está en la nueva lista, limpiarlo
+      if (_municipalityController.text.isNotEmpty && 
+          !_municipalities.contains(_municipalityController.text)) {
+        _municipalityController.clear();
+      }
+    });
   }
 
   @override
@@ -203,80 +220,173 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
         return;
       }
 
+      // Construir mapa de fotos para procesamiento genérico
+      final photosMap = <String, String>{};
+      if (_aulaPhoto1 != null) photosMap['aula_1'] = _aulaPhoto1!;
+      if (_aulaPhoto2 != null) photosMap['aula_2'] = _aulaPhoto2!;
+      if (_aulaPhoto3 != null) photosMap['aula_3'] = _aulaPhoto3!;
+      if (_aulaPhoto4 != null) photosMap['aula_4'] = _aulaPhoto4!;
+
+      final surveyId = DateTime.now().millisecondsSinceEpoch.toString();
+
       final surveyData = {
-        'surveyType': 'mobiliario',
-        'generalInfo': {
-          'date': _dateController.text,
-          'department': _departmentController.text,
-          'municipality': _municipalityController.text,
-          'zone': _zoneController.text,
-          'corregimiento': _corregimientoController.text,
-          'vereda': _veredaController.text,
-          'interviewee': {
-            'name': _intervieweeNameController.text,
-            'position': _intervieweePositionController.text,
-            'contact': _intervieweeContactController.text,
-          },
-          'institution': {
-            'mainName': _mainInstitutionNameController.text,
-            'branchName': _institutionNameController.text,
-            'principal': {
-              'name': _principalNameController.text,
-              'contact': _principalContactController.text,
-              'email': _principalEmailController.text,
+        'id': surveyId, // ID único (Requerido por AutoSync)
+        'tipoFormulario': 'mobiliario', // Identificador en español para MongoService
+        'timestamp': DateTime.now().toIso8601String(), // Requerido por AutoSync
+        'tipoEncuesta': 'mobiliario',
+        
+        // Estructura compatible con AutoSyncService y MongoService
+        'datos': {
+          'informacionGeneral': {
+            'fecha': _dateController.text,
+            'departamento': _departmentController.text,
+            'municipio': _municipalityController.text,
+            'zona': _zoneController.text,
+            'corregimiento': _corregimientoController.text,
+            'vereda': _veredaController.text,
+            'entrevistado': {
+              'nombre': _intervieweeNameController.text,
+              'cargo': _intervieweePositionController.text,
+              'contacto': _intervieweeContactController.text,
             },
-            'riskOfClosure': _riskOfClosure,
-            'closureRiskReason': _riskOfClosure ? _closureRiskReasonController.text : '',
-            // 'jornada': _selectedJornada, // Moved to cobertura
-            'location': {
-              'latitude': _latitudeController.text,
-              'longitude': _longitudeController.text,
+            'institucion': {
+               'nombreRector': _principalNameController.text,
+               'contactoRector': _principalContactController.text,
+               'emailRector': _principalEmailController.text,
+               'nombreInstitucionPrincipal': _mainInstitutionNameController.text,
+               'nombreSedeEducativa': _institutionNameController.text,
             },
-            'accessType': _selectedAccessType,
+            'ubicacion': {
+              'latitud': _latitudeController.text,
+              'longitud': _longitudeController.text,
+              'tipoAcceso': _selectedAccessType,
+            },
+           'riesgos': {
+              'riesgoCierre': _riskOfClosure,
+              'motivo': _riskOfClosure ? _closureRiskReasonController.text : '',
+            },
           },
+          'informacionCobertura': {
+             'numAlumnos': _numAlumnosController.text,
+             'numMujeres': _numMujeresController.text,
+             'numHombres': _numHombresController.text,
+             'numDocentes': _numDocentesController.text,
+             'aniosFuncionamiento': _aniosFuncionamientoController.text,
+             'nivelesEducativos': _selectedLevels,
+          },
+          'diagnosticoInfraestructura': {
+            'numAulas': _numAulasController.text,
+            'estadoAulas': _estadoAulasController.text,
+            'espaciosFisicos': _espaciosFisicosController.text,
+            'proyectosEjecucion': _proyectosEjecucionController.text,
+            'serviciosPublicos': _serviciosPublicosController.text,
+            'tieneEnergia': _hasEnergy,
+            'fuenteEnergia': _hasEnergy ? _fuenteEnergiaController.text : '',
+            'electrodomesticos': _electrodomesticosController.text,
+            'tieneInternet': _hasInternet,
+          },
+          'dane': _daneController.text,
+          'items': filledItems.map((e) => e.toJson()).toList(),
+          'dotacionCocina': {
+            'tieneCocina': _hasKitchen,
+            'necesidadesMobiliario': _hasKitchen ? _kitchenNeedsController.text : '',
+            'necesidadesUtensilios': _hasKitchen ? _kitchenUtensilsController.text : '',
+          },
+          'dotacionEmergencia': {
+            'necesitaBotiquin': _needsEmergency,
+            'necesidades': _needsEmergency ? _emergencyNeedsController.text : '',
+          },
+          // Mapa de fotos para que MongoService las procese (ahora 'fotos')
+          'fotos': photosMap,
         },
-        'cobertura': {
-          'numAlumnos': _numAlumnosController.text,
-          'numMujeres': _numMujeresController.text,
-          'numHombres': _numHombresController.text,
-          'numDocentes': _numDocentesController.text,
-          'aniosFuncionamiento': _aniosFuncionamientoController.text,
-          'nivelesEducativos': _selectedLevels,
-          'jornada': _selectedJornada,
-        },
-        'infraestructura': {
-          'numAulas': _numAulasController.text,
-          'estadoAulas': _estadoAulasController.text,
-          'espaciosFisicos': _espaciosFisicosController.text,
-          'proyectosEjecucion': _proyectosEjecucionController.text,
-          'serviciosPublicos': _serviciosPublicosController.text,
-          'hasEnergy': _hasEnergy,
-          'fuenteEnergia': _hasEnergy ? _fuenteEnergiaController.text : '',
-          'electrodomesticos': _electrodomesticosController.text,
-          'hasInternet': _hasInternet,
-          'fotosAulas': [
-            if (_aulaPhoto1 != null) _aulaPhoto1,
-            if (_aulaPhoto2 != null) _aulaPhoto2,
-            if (_aulaPhoto3 != null) _aulaPhoto3,
-            if (_aulaPhoto4 != null) _aulaPhoto4,
-          ],
-        },
-        'institutionName': _institutionNameController.text,
-        'dane': _daneController.text,
-        'items': filledItems.map((e) => e.toJson()).toList(),
-        'kitchenDotation': {
-          'hasKitchen': _hasKitchen,
-          'furnitureNeeds': _hasKitchen ? _kitchenNeedsController.text : '',
-          'utensilsNeeds': _hasKitchen ? _kitchenUtensilsController.text : '',
-        },
-        'emergencyDotation': {
-          'needsEmergency': _needsEmergency,
-          'needs': _needsEmergency ? _emergencyNeedsController.text : '',
-        },
+        
+        // Metadatos adicionales para facilitar búsqueda rápida
+        'nombreInstitucion': _institutionNameController.text,
+        'codigoDane': _daneController.text,
       };
 
-      await FormSubmissionService.submitSurveyForm(context, surveyData);
+      try {
+        // Usar AutoSyncService para manejo offline/online
+        await AutoSyncService.scheduleImmediateSync(surveyData);
+
+        if (mounted) {
+          _showOfflineSuccessDialog();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error guardando formulario: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
     }
+  }
+
+  void _showOfflineSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 10),
+            Text('Formulario Guardado'),
+          ],
+        ),
+        content: const Text(
+          'El formulario ha sido guardado localmente.\n\n'
+          'Se enviará automáticamente cuando el dispositivo tenga conexión a internet.\n\n'
+          'Puede continuar registrando otra sede.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Cerrar diálogo
+              Navigator.pop(context); // Salir de la pantalla
+            },
+            child: const Text('Salir'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _resetForm();
+            },
+            child: const Text('Nuevo Registro'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetForm() {
+    setState(() {
+      // Limpiar controladores
+      _institutionNameController.clear();
+      _daneController.clear();
+      _numAlumnosController.clear();
+      _numMujeresController.clear();
+      _numHombresController.clear();
+      _numDocentesController.clear();
+      _aniosFuncionamientoController.clear();
+      _educationalLevelsController.clear();
+      _selectedLevels.clear();
+      _numAulasController.clear();
+      
+      // Reiniciar fotos
+      _aulaPhoto1 = null;
+      _aulaPhoto2 = null;
+      _aulaPhoto3 = null;
+      _aulaPhoto4 = null;
+      
+      // Reiniciar items del catálogo
+      _allItems = FurnitureCatalog.getItems(); // Recargar original
+      _filteredItems = List.from(_allItems);
+      _onSearchChanged(); // Aplicar filtro si search está activo
+      
+      // Mover scroll al inicio
+      // (Opcional, si hubiera controlador de scroll)
+    });
   }
 
   void _showLevelsDialog() {
@@ -1126,32 +1236,35 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _departmentController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-                  decoration: InputDecoration(
-                    label: _requiredLabel('Departamento'),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextFormField(
-                  controller: _municipalityController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-                  decoration: InputDecoration(
-                    label: _requiredLabel('Municipio'),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
+          LocationDropdown(
+            label: 'Departamento',
+            value: _departmentController.text.isNotEmpty ? _departmentController.text : null,
+            placeholder: 'Seleccionar departamento',
+            items: LocationData.departments,
+            prefixIcon: Icons.location_on_outlined,
+            onChanged: (String? newValue) {
+              setState(() {
+                _departmentController.text = newValue ?? '';
+                _updateMunicipalities(newValue);
+              });
+            },
+            validator: (value) => value == null ? 'Seleccione un departamento' : null,
+          ),
+          const SizedBox(height: 12),
+          LocationDropdown(
+            label: 'Municipio',
+            value: _municipalityController.text.isNotEmpty ? _municipalityController.text : null,
+            placeholder: 'Seleccionar municipio',
+            items: _municipalities,
+            prefixIcon: Icons.location_city_outlined,
+            enabled: _departmentController.text.isNotEmpty,
+            parentSelection: _departmentController.text.isNotEmpty ? _departmentController.text : null,
+            onChanged: (String? newValue) {
+              setState(() {
+                _municipalityController.text = newValue ?? '';
+              });
+            },
+            validator: (value) => value == null ? 'Seleccione un municipio' : null,
           ),
           const SizedBox(height: 12),
           Row(
