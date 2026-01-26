@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/survey_state.dart';
+import 'models/furniture_survey_state.dart';
 import 'views/selection_page.dart'; // Cambio: Importamos SelectionPage
 import 'config/theme.dart';
 import 'services/storage_service.dart';
@@ -58,6 +59,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SurveyState()),
+        ChangeNotifierProvider(create: (_) => FurnitureSurveyState()),
       ],
       child: const MyApp(),
     ),

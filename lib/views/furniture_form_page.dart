@@ -27,7 +27,8 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
   final TextEditingController _dateController = TextEditingController(text: DateTime.now().toString().split(' ')[0]);
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _municipalityController = TextEditingController();
-  final TextEditingController _zoneController = TextEditingController();
+  // final TextEditingController _zoneController = TextEditingController(); // Reemplazado por selector
+  String? _selectedZone;
   final TextEditingController _corregimientoController = TextEditingController();
   final TextEditingController _veredaController = TextEditingController();
   
@@ -49,7 +50,8 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
   
   // Variables para selectores
   String? _selectedAccessType;
-  final List<String> _accessTypeOptions = ['Vehicular', 'Fluvial', 'Trocha'];
+  final List<String> _accessTypeOptions = ['Vehicular (Carretera)', 'Fluvial (Rio)', 'Camino Herradura (Trocha)'];
+  final List<String> _zoneOptions = ['Urbano', 'Rural'];
 
   String? _selectedJornada;
   final List<String> _jornadaOptions = ['Única', 'Tarde', 'Mañana', 'Completa'];
@@ -68,9 +70,39 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
   final List<String> _availableLevels = ['Preescolar', 'Primaria', 'Secundaria'];
 
   // Controladores para Diagnóstico de Infraestructura
-  final TextEditingController _numAulasController = TextEditingController();
-  final TextEditingController _estadoAulasController = TextEditingController();
-  final TextEditingController _espaciosFisicosController = TextEditingController();
+  // Reemplazados por lógica de cantidades
+  // final TextEditingController _numAulasController = TextEditingController();
+  // final TextEditingController _estadoAulasController = TextEditingController();
+  // final TextEditingController _espaciosFisicosController = TextEditingController();
+
+  // Variables para Infraestructura (tomado de InfrastructureFormPage)
+  bool _hasSalones = false;
+  int _cantidadSalones = 0;
+  bool _hasComedor = false;
+  int _cantidadComedor = 0;
+  bool _hasCocina = false;
+  int _cantidadCocina = 0;
+  bool _hasSalonReuniones = false;
+  int _cantidadSalonReuniones = 0;
+  bool _hasHabitaciones = false;
+  int _cantidadHabitaciones = 0;
+  bool _hasBanos = false;
+  int _cantidadBanos = 0;
+  bool _hasOtros = false;
+  int _cantidadOtros = 0;
+  final TextEditingController _otrosEspaciosController = TextEditingController();
+ 
+  // Map to hold controllers for physical state of each space
+  final Map<String, TextEditingController> _spaceStatusControllers = {
+    'hasSalones': TextEditingController(),
+    'hasComedor': TextEditingController(),
+    'hasCocina': TextEditingController(),
+    'hasSalonReuniones': TextEditingController(),
+    'hasHabitaciones': TextEditingController(),
+    'hasBanos': TextEditingController(),
+    'hasOtros': TextEditingController(),
+  };
+
   final TextEditingController _proyectosEjecucionController = TextEditingController();
   final TextEditingController _serviciosPublicosController = TextEditingController();
   
@@ -145,7 +177,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
     _dateController.dispose();
     _departmentController.dispose();
     _municipalityController.dispose();
-    _zoneController.dispose();
+    // _zoneController.dispose();
     _corregimientoController.dispose();
     _veredaController.dispose();
     _intervieweeNameController.dispose();
@@ -165,9 +197,14 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
     _aniosFuncionamientoController.dispose();
     _educationalLevelsController.dispose();
     
-    _numAulasController.dispose();
-    _estadoAulasController.dispose();
-    _espaciosFisicosController.dispose();
+    // _numAulasController.dispose();
+    // _estadoAulasController.dispose();
+    // _espaciosFisicosController.dispose();
+    _otrosEspaciosController.dispose();
+    for (var controller in _spaceStatusControllers.values) {
+      controller.dispose();
+    }
+
     _proyectosEjecucionController.dispose();
     _serviciosPublicosController.dispose();
     _fuenteEnergiaController.dispose();
@@ -241,7 +278,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
             'fecha': _dateController.text,
             'departamento': _departmentController.text,
             'municipio': _municipalityController.text,
-            'zona': _zoneController.text,
+            'zona': _selectedZone,
             'corregimiento': _corregimientoController.text,
             'vereda': _veredaController.text,
             'entrevistado': {
@@ -275,9 +312,36 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
              'nivelesEducativos': _selectedLevels,
           },
           'diagnosticoInfraestructura': {
-            'numAulas': _numAulasController.text,
-            'estadoAulas': _estadoAulasController.text,
-            'espaciosFisicos': _espaciosFisicosController.text,
+            // Campos de cantidades actualizados
+            'hasSalones': _hasSalones,
+            'cantidadSalones': _cantidadSalones,
+            'hasComedor': _hasComedor,
+            'cantidadComedor': _cantidadComedor,
+            'hasCocina': _hasCocina,
+            'cantidadCocina': _cantidadCocina,
+            'hasSalonReuniones': _hasSalonReuniones,
+            'cantidadSalonReuniones': _cantidadSalonReuniones,
+            'hasHabitaciones': _hasHabitaciones,
+            'cantidadHabitaciones': _cantidadHabitaciones,
+            'hasBanos': _hasBanos,
+            'cantidadBanos': _cantidadBanos,
+
+            // Estados físicos
+            'estadoSalones': _spaceStatusControllers['hasSalones']?.text ?? '',
+            'estadoComedor': _spaceStatusControllers['hasComedor']?.text ?? '',
+            'estadoCocina': _spaceStatusControllers['hasCocina']?.text ?? '',
+            'estadoSalonReuniones': _spaceStatusControllers['hasSalonReuniones']?.text ?? '',
+            'estadoHabitaciones': _spaceStatusControllers['hasHabitaciones']?.text ?? '',
+            'estadoBanos': _spaceStatusControllers['hasBanos']?.text ?? '',
+            'estadoOtros': _spaceStatusControllers['hasOtros']?.text ?? '',
+            'hasOtros': _hasOtros,
+            'cantidadOtros': _cantidadOtros,
+            'descripcionOtrosEspacios': _otrosEspaciosController.text,
+            
+            // 'numAulas': _numAulasController.text,
+            // 'estadoAulas': _estadoAulasController.text,
+            // 'espaciosFisicos': _espaciosFisicosController.text,
+            
             'proyectosEjecucion': _proyectosEjecucionController.text,
             'serviciosPublicos': _serviciosPublicosController.text,
             'tieneEnergia': _hasEnergy,
@@ -371,13 +435,33 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
       _aniosFuncionamientoController.clear();
       _educationalLevelsController.clear();
       _selectedLevels.clear();
-      _numAulasController.clear();
+      // _numAulasController.clear();
       
       // Reiniciar fotos
       _aulaPhoto1 = null;
       _aulaPhoto2 = null;
       _aulaPhoto3 = null;
       _aulaPhoto4 = null;
+
+      // Reiniciar infraestructura
+       _hasSalones = false;
+      _cantidadSalones = 0;
+      _hasComedor = false;
+      _cantidadComedor = 0;
+      _hasCocina = false;
+      _cantidadCocina = 0;
+      for (var controller in _spaceStatusControllers.values) {
+        controller.clear();
+      }
+      _hasSalonReuniones = false;
+      _cantidadSalonReuniones = 0;
+      _hasHabitaciones = false;
+      _cantidadHabitaciones = 0;
+      _hasBanos = false;
+      _cantidadBanos = 0;
+      _hasOtros = false;
+      _cantidadOtros = 0;
+      _otrosEspaciosController.clear();
       
       // Reiniciar items del catálogo
       _allItems = FurnitureCatalog.getItems(); // Recargar original
@@ -662,10 +746,11 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // Nombre editable
+                          // Nombre editable (Ahora readOnly)
                           Expanded(
                             child: TextFormField(
                               initialValue: subItem.name,
+                              readOnly: true,
                               decoration: const InputDecoration(
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(
@@ -673,9 +758,10 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
                                   horizontal: 8,
                                 ),
                                 border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: Color(0xFFF5F5F5),
                               ),
-                              style: const TextStyle(fontSize: 13),
-                              onChanged: (val) => subItem.name = val,
+                              style: const TextStyle(fontSize: 13, color: Colors.black87),
                             ),
                           ),
                         ],
@@ -1014,7 +1100,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
             validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      label: _requiredLabel('Años func.'),
+                      label: _requiredLabel('Años Funcionamiento I.E'),
                       border: OutlineInputBorder(),
                       isDense: true,
                       prefixIcon: Icon(Icons.history),
@@ -1064,7 +1150,368 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
     );
   }
 
+  Widget _buildSpaceCheckbox(Map<String, dynamic> space) {
+    bool getValue() {
+      switch (space['key']) {
+        case 'hasSalones': return _hasSalones;
+        case 'hasComedor': return _hasComedor;
+        case 'hasCocina': return _hasCocina;
+        case 'hasSalonReuniones': return _hasSalonReuniones;
+        case 'hasHabitaciones': return _hasHabitaciones;
+        case 'hasBanos': return _hasBanos;
+        case 'hasOtros': return _hasOtros;
+        default: return false;
+      }
+    }
+
+    int getQuantity() {
+      switch (space['key']) {
+        case 'hasSalones': return _cantidadSalones;
+        case 'hasComedor': return _cantidadComedor;
+        case 'hasCocina': return _cantidadCocina;
+        case 'hasSalonReuniones': return _cantidadSalonReuniones;
+        case 'hasHabitaciones': return _cantidadHabitaciones;
+        case 'hasBanos': return _cantidadBanos;
+        case 'hasOtros': return _cantidadOtros;
+        default: return 0;
+      }
+    }
+
+    void setValue(bool value) {
+      setState(() {
+        switch (space['key']) {
+          case 'hasSalones': 
+            _hasSalones = value;
+            if (!value) _cantidadSalones = 0;
+            break;
+          case 'hasComedor': 
+            _hasComedor = value;
+            if (!value) _cantidadComedor = 0;
+            break;
+          case 'hasCocina': 
+            _hasCocina = value;
+            if (!value) _cantidadCocina = 0;
+            break;
+          case 'hasSalonReuniones': 
+            _hasSalonReuniones = value;
+            if (!value) _cantidadSalonReuniones = 0;
+            break;
+          case 'hasHabitaciones': 
+            _hasHabitaciones = value;
+            if (!value) _cantidadHabitaciones = 0;
+            break;
+          case 'hasBanos': 
+            _hasBanos = value;
+            if (!value) _cantidadBanos = 0;
+            break;
+          case 'hasOtros': 
+            _hasOtros = value;
+            if (!value) {
+              _cantidadOtros = 0;
+              _otrosEspaciosController.clear();
+            }
+            break;
+        }
+      });
+    }
+
+    void setQuantity(int quantity) {
+      setState(() {
+        switch (space['key']) {
+          case 'hasSalones': _cantidadSalones = quantity; break;
+          case 'hasComedor': _cantidadComedor = quantity; break;
+          case 'hasCocina': _cantidadCocina = quantity; break;
+          case 'hasSalonReuniones': _cantidadSalonReuniones = quantity; break;
+          case 'hasHabitaciones': _cantidadHabitaciones = quantity; break;
+          case 'hasBanos': _cantidadBanos = quantity; break;
+          case 'hasOtros': _cantidadOtros = quantity; break;
+        }
+      });
+    }
+
+    final isSelected = getValue();
+    final quantity = getQuantity();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected 
+              ? Colors.green 
+              : Colors.grey.shade300,
+          width: isSelected ? 2 : 1,
+        ),
+        color: isSelected 
+            ? Colors.green.withValues(alpha: 0.05)
+            : Colors.white,
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setValue(!isSelected),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isSelected 
+                            ? Colors.green 
+                            : Colors.grey.shade400,
+                        width: 2,
+                      ),
+                      color: isSelected 
+                          ? Colors.green 
+                          : Colors.white,
+                    ),
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check,
+                            size: 12,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    space['icon'],
+                    color: isSelected 
+                        ? Colors.green 
+                        : Colors.grey.shade400,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      space['title'],
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: isSelected 
+                            ? FontWeight.w600 
+                            : FontWeight.w500,
+                        color: isSelected 
+                            ? Colors.green.shade700 
+                            : Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          if (isSelected) ...[
+            Container(
+              width: double.infinity,
+              height: 1,
+              color: Colors.green.withValues(alpha: 0.2),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                   const SizedBox(width: 32),
+                  Text(
+                    'Cantidad:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 120,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.shade300,
+                        width: 1,
+                      ),
+                      color: Colors.white,
+                    ),
+                    child: Row(
+                      children: [
+                        InkWell(
+                          onTap: quantity > 0 ? () => setQuantity(quantity - 1) : null,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(8),
+                            bottomLeft: Radius.circular(8),
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: quantity > 0 
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(8),
+                                bottomLeft: Radius.circular(8),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 16,
+                              color: quantity > 0 
+                                  ? Colors.green.shade600
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                        ),
+                        
+                        Expanded(
+                          child: Container(
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                quantity.toString(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green.shade700,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        InkWell(
+                          onTap: () => setQuantity(quantity + 1),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(8),
+                            bottomRight: Radius.circular(8),
+                          ),
+                          child: Container(
+                            width: 32,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(8),
+                                bottomRight: Radius.circular(8),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              size: 16,
+                              color: Colors.green.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (isSelected) ...[
+             const SizedBox(height: 8),
+             Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade300),
+                color: Colors.white,
+              ),
+              child: TextFormField(
+                controller: _spaceStatusControllers[space['key']],
+                maxLines: 2,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: 'Estado físico de : ${space['title']}',
+                  labelStyle: TextStyle(color: Colors.green.shade700),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          if (isSelected && space['key'] == 'hasOtros') ...[
+            Container(
+              width: double.infinity,
+              height: 1,
+              color: Colors.green.withValues(alpha: 0.2),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const SizedBox(width: 32),
+                      Icon(
+                        Icons.description,
+                        color: Colors.green.shade600,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Especifique otros espacios:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    margin: const EdgeInsets.only(left: 32),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade300),
+                      color: Colors.white,
+                    ),
+                    child: TextFormField(
+                      controller: _otrosEspaciosController,
+                      maxLines: 2,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: const InputDecoration(
+                        hintText: 'Ej: Biblioteca, laboratorio, auditorio, etc.',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(12),
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfrastructureSection() {
+    final spaces = [
+      {'key': 'hasSalones', 'title': 'Salones', 'icon': Icons.school},
+      {'key': 'hasComedor', 'title': 'Comedor', 'icon': Icons.restaurant},
+      {'key': 'hasCocina', 'title': 'Cocina', 'icon': Icons.kitchen},
+      {'key': 'hasSalonReuniones', 'title': 'Salón para reuniones', 'icon': Icons.meeting_room},
+      {'key': 'hasHabitaciones', 'title': 'Habitaciones', 'icon': Icons.bed},
+      {'key': 'hasBanos', 'title': 'Baños', 'icon': Icons.wc},
+      {'key': 'hasOtros', 'title': 'Otros espacios', 'icon': Icons.more_horiz},
+    ];
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -1079,7 +1526,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
         childrenPadding: const EdgeInsets.all(16),
         children: [
             const Text(
-              'Evalúe el estado físico para garantizar sostenibilidad',
+              'Seleccione los espacios existentes y su cantidad:',
               style: TextStyle(
                 fontStyle: FontStyle.italic,
                 color: Colors.grey,
@@ -1087,35 +1534,15 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
               ),
             ),
             const SizedBox(height: 12),
-            CustomTextField(
-              controller: _numAulasController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-              label: 'Número de aulas en la sede',
-              prefixIcon: Icons.meeting_room,
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            CustomTextField(
-              controller: _estadoAulasController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-              label: 'Descripción del estado de las aulas',
-              prefixIcon: Icons.description,
-              maxLines: 3,
-            ),
-            const SizedBox(height: 12),
-            CustomTextField(
-              controller: _espaciosFisicosController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-              label: 'Espacios existentes y su estado físico',
-              hintText: 'Ej: Comedor escolar (Bueno), Cancha (Regular)...',
-              prefixIcon: Icons.place,
-              maxLines: 3,
-            ),
+            
+            // Lista de espacios
+            ...spaces.map((space) => _buildSpaceCheckbox(space)).toList(),
+            
             const SizedBox(height: 12),
             CustomTextField(
               controller: _proyectosEjecucionController,
             validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-              label: 'Proyectos en ejecución y entidad a cargo',
+              label: 'Proyectos en ejecución y ejecutados de obras por impuesto y la entidad a cargo',
               hintText: 'Remodelaciones, dotaciones...',
               prefixIcon: Icons.engineering,
               maxLines: 2,
@@ -1181,28 +1608,28 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
         children: [
             PhotoCaptureField(
                   required: true,
-              label: 'Foto Aula 1',
+              label: 'Foto Frente de la Sede Educativa',
               imagePath: _aulaPhoto1,
               onImageSelected: (path) => setState(() => _aulaPhoto1 = path),
             ),
             const SizedBox(height: 12),
             PhotoCaptureField(
                   required: true,
-              label: 'Foto Aula 2',
+              label: 'Foto Aula 1',
               imagePath: _aulaPhoto2,
               onImageSelected: (path) => setState(() => _aulaPhoto2 = path),
             ),
             const SizedBox(height: 12),
             PhotoCaptureField(
                   required: true,
-              label: 'Foto Aula 3',
+              label: 'Foto Aula 2',
               imagePath: _aulaPhoto3,
               onImageSelected: (path) => setState(() => _aulaPhoto3 = path),
             ),
             const SizedBox(height: 12),
             PhotoCaptureField(
-                  required: true,
-              label: 'Foto Aula 4',
+                  required: false,
+              label: 'Foto Comedor o Cocina',
               imagePath: _aulaPhoto4,
               onImageSelected: (path) => setState(() => _aulaPhoto4 = path),
             ),
@@ -1270,14 +1697,25 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
           Row(
             children: [
               Expanded(
-                child: TextFormField(
-                  controller: _zoneController,
-            validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                child: DropdownButtonFormField<String>(
+                  validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                   decoration: InputDecoration(
                     label: _requiredLabel('Zona'),
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
+                  value: _selectedZone,
+                  items: _zoneOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedZone = newValue;
+                    });
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -1379,7 +1817,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
           Column(
             children: [
               SwitchListTile(
-                title: const Text('¿Riesgo de Cierre?'),
+                title: const Text('¿Riesgo de Cierre de la Sede Educativa?'),
                 value: _riskOfClosure,
                 onChanged: (val) => setState(() => _riskOfClosure = val),
                 contentPadding: EdgeInsets.zero,

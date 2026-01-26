@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/theme.dart';
 import 'survey_form_page.dart';
-import 'furniture_form_page.dart';
+import 'furniture/furniture_general_page.dart';
 
 class SelectionPage extends StatelessWidget {
   const SelectionPage({Key? key}) : super(key: key);
@@ -93,7 +93,7 @@ class SelectionPage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const FurnitureFormPage()),
+                            MaterialPageRoute(builder: (_) => const FurnitureGeneralPage()),
                           );
                         },
                       ),

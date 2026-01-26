@@ -5,16 +5,22 @@ class CustomNumberField extends StatelessWidget {
   final String label;
   final String? suffix;
   final int? initialValue;
-  final void Function(int?) onChanged;
+  final void Function(String)? onChanged;
   final String? Function(String?)? validator;
+  final TextEditingController? controller;
+  final IconData? icon;
+  final bool readOnly;
   
   const CustomNumberField({
     super.key,
     required this.label,
     this.suffix,
     this.initialValue,
-    required this.onChanged,
+    this.onChanged,
     this.validator,
+    this.controller,
+    this.icon,
+    this.readOnly = false,
   });
 
   @override
@@ -22,7 +28,9 @@ class CustomNumberField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
-        initialValue: initialValue?.toString(),
+        readOnly: readOnly,
+        controller: controller,
+        initialValue: controller == null ? initialValue?.toString() : null,
         keyboardType: TextInputType.number,
         inputFormatters: [
           FilteringTextInputFormatter.digitsOnly,
@@ -30,27 +38,16 @@ class CustomNumberField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           suffixText: suffix,
+          prefixIcon: icon != null ? Icon(icon) : null,
+          filled: readOnly,
+          fillColor: readOnly ? Colors.grey.shade200 : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),          validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Este campo es requerido';
-          }
-          final number = int.tryParse(value);
-          if (number == null) {
-            return 'Ingrese un número válido';
-          }
-          if (number < 0) {
-            return 'El número debe ser mayor o igual a 0';
-          }
-          return null;
-        },
-        onChanged: (value) {
-          final number = int.tryParse(value);
-          onChanged(number);
-        },
+        ),
+        validator: validator,
+        onChanged: onChanged,
       ),
     );
   }
