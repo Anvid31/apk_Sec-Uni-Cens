@@ -1418,30 +1418,7 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
             ),
           ],
 
-          if (isSelected) ...[
-             const SizedBox(height: 8),
-             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade300),
-                color: Colors.white,
-              ),
-              child: TextFormField(
-                controller: _spaceStatusControllers[space['key']],
-                maxLines: 2,
-                style: const TextStyle(fontSize: 14),
-                decoration: InputDecoration(
-                  labelText: 'Estado físico de : ${space['title']}',
-                  labelStyle: TextStyle(color: Colors.green.shade700),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          
+
           if (isSelected && space['key'] == 'hasOtros') ...[
             Container(
               width: double.infinity,
@@ -1495,6 +1472,30 @@ class _FurnitureFormPageState extends State<FurnitureFormPage>
                 ],
               ),
             ),
+          ],
+          
+          if (isSelected) ...[
+             const SizedBox(height: 8),
+             Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade300),
+                color: Colors.white,
+              ),
+              child: TextFormField(
+                controller: _spaceStatusControllers[space['key']],
+                maxLines: 2,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: 'Estado físico de : ${space['title']}',
+                  labelStyle: TextStyle(color: Colors.green.shade700),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         ],
       ),

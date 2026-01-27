@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/furniture_survey_state.dart';
 import '../../widgets/layout/enhanced_form_container.dart';
 import '../../widgets/form/custom_text_field.dart';
+import '../../widgets/form/repeating_icon_button.dart';
 import '../../utils/form_navigator.dart';
 import 'furniture_photos_page.dart';
 
@@ -132,6 +133,68 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
 
   void _onNext() {
     if (_formKey.currentState!.validate()) {
+      // Validaciones de Cantidad para Espacios seleccionados
+      if (_hasSalones && _cantidadSalones <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Salones')));
+        return;
+      }
+      if (_hasComedor && _cantidadComedor <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Comedor')));
+        return;
+      }
+      if (_hasCocina && _cantidadCocina <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Cocina')));
+        return;
+      }
+      if (_hasSalonReuniones && _cantidadSalonReuniones <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Salón de Reuniones')));
+        return;
+      }
+      if (_hasHabitaciones && _cantidadHabitaciones <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Habitaciones')));
+        return;
+      }
+      if (_hasBanos && _cantidadBanos <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Baños')));
+        return;
+      }
+      if (_hasOtros && _cantidadOtros <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique la cantidad de Otros espacios')));
+        return;
+      }
+
+      // Validaciones de Cantidad para Electrodomésticos seleccionados
+      if (_hasNevera && _cantidadNevera <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Neveras')));
+        return;
+      }
+      if (_hasTelevisor && _cantidadTelevisor <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Televisores')));
+        return;
+      }
+      if (_hasComputador && _cantidadComputador <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Computadores')));
+        return;
+      }
+      if (_hasVentilador && _cantidadVentilador <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Ventiladores')));
+        return;
+      }
+      if (_hasVideoBeam && _cantidadVideoBeam <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Video Beams')));
+        return;
+      }
+      if (_hasImpresora && _cantidadImpresora <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Impresoras')));
+        return;
+      }
+      if (_hasEquipoSonido && _cantidadEquipoSonido <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Indique cantidad de Equipos de Sonido')));
+        return;
+      }
+
+      // Validaciones de Servicios Públicos
+      // ... (existing checks)
       if (_hasEnergy && (_fuenteEnergia == null || _fuenteEnergia!.isEmpty)) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seleccione la fuente de energía')));
         return;
@@ -421,7 +484,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                 children: [
                   const Text('Cantidad:'),
                   const SizedBox(width: 12),
-                  IconButton(
+                  RepeatingIconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: quantity > 0 ? () => onQuantityChanged(quantity - 1) : null,
                   ),
@@ -429,7 +492,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                     '$quantity',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  IconButton(
+                  RepeatingIconButton(
                     icon: const Icon(Icons.add_circle_outline),
                     onPressed: () => onQuantityChanged(quantity + 1),
                   ),
@@ -441,6 +504,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextFormField(
                   controller: stateController,
+                  validator: (v) => value && (v == null || v.isEmpty) ? 'Requerido: Estado físico' : null,
                   decoration: InputDecoration(
                     labelText: 'Estado físico de : $title',
                     border: const OutlineInputBorder(),
@@ -453,6 +517,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: TextFormField(
                   controller: otherController ?? _otrosEspaciosController,
+                  validator: (v) => value && (v == null || v.isEmpty) ? 'Especifique el espacio' : null,
                   decoration: InputDecoration(
                     labelText: otherLabel ?? 'Especifique otros espacios',
                     border: const OutlineInputBorder(),
@@ -516,7 +581,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                     const SizedBox(width: 8),
                      Row(
                       children: [
-                        IconButton(
+                        RepeatingIconButton(
                           icon: const Icon(Icons.remove_circle_outline),
                           onPressed: () {
                             if (item['quantity'] > 0) {
@@ -529,7 +594,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                           padding: const EdgeInsets.all(4),
                         ),
                         Text('${item['quantity']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        IconButton(
+                        RepeatingIconButton(
                           icon: const Icon(Icons.add_circle_outline),
                           onPressed: () {
                             setState(() {
@@ -583,37 +648,37 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
               
               _buildSpaceCheckbox(
                 title: 'Salones', icon: Icons.school, value: _hasSalones, quantity: _cantidadSalones, stateController: _estadoSalonesCtrl,
-                onCheckChanged: (v) => setState(() { _hasSalones = v; if(!v) _cantidadSalones = 0; }),
+                onCheckChanged: (v) => setState(() { _hasSalones = v; _cantidadSalones = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadSalones = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Comedor', icon: Icons.restaurant, value: _hasComedor, quantity: _cantidadComedor, stateController: _estadoComedorCtrl,
-                onCheckChanged: (v) => setState(() { _hasComedor = v; if(!v) _cantidadComedor = 0; }),
+                onCheckChanged: (v) => setState(() { _hasComedor = v; _cantidadComedor = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadComedor = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Cocina', icon: Icons.kitchen, value: _hasCocina, quantity: _cantidadCocina, stateController: _estadoCocinaCtrl,
-                onCheckChanged: (v) => setState(() { _hasCocina = v; if(!v) _cantidadCocina = 0; }),
+                onCheckChanged: (v) => setState(() { _hasCocina = v; _cantidadCocina = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadCocina = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Salón para reuniones', icon: Icons.meeting_room, value: _hasSalonReuniones, quantity: _cantidadSalonReuniones, stateController: _estadoSalonReunionesCtrl,
-                onCheckChanged: (v) => setState(() { _hasSalonReuniones = v; if(!v) _cantidadSalonReuniones = 0; }),
+                onCheckChanged: (v) => setState(() { _hasSalonReuniones = v; _cantidadSalonReuniones = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadSalonReuniones = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Habitaciones', icon: Icons.bed, value: _hasHabitaciones, quantity: _cantidadHabitaciones, stateController: _estadoHabitacionesCtrl,
-                onCheckChanged: (v) => setState(() { _hasHabitaciones = v; if(!v) _cantidadHabitaciones = 0; }),
+                onCheckChanged: (v) => setState(() { _hasHabitaciones = v; _cantidadHabitaciones = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadHabitaciones = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Baños', icon: Icons.wc, value: _hasBanos, quantity: _cantidadBanos, stateController: _estadoBanosCtrl,
-                onCheckChanged: (v) => setState(() { _hasBanos = v; if(!v) _cantidadBanos = 0; }),
+                onCheckChanged: (v) => setState(() { _hasBanos = v; _cantidadBanos = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadBanos = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Otros espacios', icon: Icons.more_horiz, value: _hasOtros, quantity: _cantidadOtros, stateController: _estadoOtrosCtrl,
-                onCheckChanged: (v) => setState(() { _hasOtros = v; if(!v) { _cantidadOtros = 0; _otrosEspaciosController.clear(); } }),
+                onCheckChanged: (v) => setState(() { _hasOtros = v; if(v) { _cantidadOtros = 1; } else { _cantidadOtros = 0; _otrosEspaciosController.clear(); } }),
                 onQuantityChanged: (q) => setState(() => _cantidadOtros = q),
                 isOther: true,
               ),
@@ -622,7 +687,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
               CustomTextField(
                 controller: _proyectosEjecucionController,
                 validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
-                label: 'Proyectos en ejecución y ejecutados de obras por impuesto',
+                label: 'Proyectos en ejecución y ejecutados de obras por impuesto y la entidad a cargo',
                 hintText: 'Remodelaciones, dotaciones...',
                 prefixIcon: Icons.engineering,
                 maxLines: 2,
@@ -689,37 +754,37 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
               
               _buildSpaceCheckbox(
                 title: 'Nevera / Refrigerador', icon: Icons.kitchen, value: _hasNevera, quantity: _cantidadNevera, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasNevera = v; if(!v) _cantidadNevera = 0; }),
+                onCheckChanged: (v) => setState(() { _hasNevera = v; _cantidadNevera = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadNevera = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Televisor', icon: Icons.tv, value: _hasTelevisor, quantity: _cantidadTelevisor, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasTelevisor = v; if(!v) _cantidadTelevisor = 0; }),
+                onCheckChanged: (v) => setState(() { _hasTelevisor = v; _cantidadTelevisor = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadTelevisor = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Computador', icon: Icons.computer, value: _hasComputador, quantity: _cantidadComputador, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasComputador = v; if(!v) _cantidadComputador = 0; }),
+                onCheckChanged: (v) => setState(() { _hasComputador = v; _cantidadComputador = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadComputador = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Ventilador / Aire Acond.', icon: Icons.wind_power, value: _hasVentilador, quantity: _cantidadVentilador, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasVentilador = v; if(!v) _cantidadVentilador = 0; }),
+                onCheckChanged: (v) => setState(() { _hasVentilador = v; _cantidadVentilador = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadVentilador = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Video Beam', icon: Icons.videocam, value: _hasVideoBeam, quantity: _cantidadVideoBeam, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasVideoBeam = v; if(!v) _cantidadVideoBeam = 0; }),
+                onCheckChanged: (v) => setState(() { _hasVideoBeam = v; _cantidadVideoBeam = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadVideoBeam = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Impresora', icon: Icons.print, value: _hasImpresora, quantity: _cantidadImpresora, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasImpresora = v; if(!v) _cantidadImpresora = 0; }),
+                onCheckChanged: (v) => setState(() { _hasImpresora = v; _cantidadImpresora = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadImpresora = q),
               ),
               _buildSpaceCheckbox(
                 title: 'Equipo de Sonido', icon: Icons.speaker, value: _hasEquipoSonido, quantity: _cantidadEquipoSonido, showState: false, stateController: null,
-                onCheckChanged: (v) => setState(() { _hasEquipoSonido = v; if(!v) _cantidadEquipoSonido = 0; }),
+                onCheckChanged: (v) => setState(() { _hasEquipoSonido = v; _cantidadEquipoSonido = v ? 1 : 0; }),
                 onQuantityChanged: (q) => setState(() => _cantidadEquipoSonido = q),
               ),
               

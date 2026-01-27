@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/furniture_survey_state.dart';
 import '../../models/furniture_item.dart';
 import '../../widgets/layout/enhanced_form_container.dart';
+import '../../widgets/form/repeating_icon_button.dart';
 import '../../utils/form_navigator.dart';
 
 class FurnitureItemsPage extends StatefulWidget {
@@ -58,6 +59,30 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
   }
 
   Future<void> _onSubmit() async {
+    // Confirmación antes de enviar
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Envío'),
+          content: const Text('¿Está seguro de que desea finalizar y enviar la encuesta? Verifique que toda la información esté correcta.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              child: const Text('Enviar', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
     // Guardar datos de dotación antes de enviar
     _surveyState.updateDotation(
       tieneCocina: _tieneCocina,
@@ -140,7 +165,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
               ),
               TextButton.icon(
                  onPressed: () async {
-                   final Uri url = Uri.parse('https://www.mineducacion.gov.co/1759/articles-319520_archivo_pdf.pdf');
+                   final Uri url = Uri.parse('https://www.mineducacion.gov.co/1759/articles-355996_archivo_pdf_manual_dotaciones.pdf');
                    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir el manual')));
@@ -291,127 +316,188 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
     final hasSubItems = item.subItems != null && item.subItems!.isNotEmpty;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // FILA SUPERIOR: Nombre e Indicador de Cantidad (si no hay subitems)
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (item.description.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            item.description,
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            if (item.description.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 8),
-                child: Text(
-                  item.description,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-              ),
-            
-            if (hasSubItems)
-              ...item.subItems!.map((sub) => Padding(
-                padding: const EdgeInsets.only(left: 12, bottom: 8),
-                child: Row(
-                  children: [
-                    Expanded(child: Text('• ${sub.name}', style: const TextStyle(fontSize: 13))),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 20),
-                      onPressed: sub.quantity > 0 ? () {
-                         setState(() {
-                           sub.quantity--;
-                           item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
-                         });
-                      } : null,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                // Si NO tiene subitems, mostramos el control de cantidad aquí arriba
+                if (!hasSubItems) ...[
+                 const SizedBox(width: 8),
+                 Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text('${sub.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 20),
-                       onPressed: () {
-                         setState(() {
-                           sub.quantity++;
-                           item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
-                         });
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              )).toList(),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: item.observations,
-                    decoration: const InputDecoration(
-                      labelText: 'Estado / Observaciones',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (val) => item.observations = val,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  children: [
-                    const Text('Total', style: TextStyle(fontSize: 12)),
-                    Row(
+                   child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (!hasSubItems)
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline),
+                        RepeatingIconButton(
+                          icon: const Icon(Icons.remove, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                           onPressed: item.quantity > 0 ? () {
                             setState(() => item.quantity--);
                           } : null,
                         ),
-                        
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: item.quantity > 0 ? Colors.green.shade50 : null,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                          constraints: const BoxConstraints(minWidth: 24),
+                          alignment: Alignment.center,
                           child: Text(
                             '${item.quantity}',
                             style: TextStyle(
-                              fontSize: 18, 
+                              fontSize: 16, 
                               fontWeight: FontWeight.bold,
-                              color: item.quantity > 0 ? Colors.green.shade800 : Colors.black,
+                              color: item.quantity > 0 ? Colors.blue.shade700 : Colors.black54,
                             ),
                           ),
                         ),
-                        
-                        if (!hasSubItems)
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
+                        RepeatingIconButton(
+                          icon: const Icon(Icons.add, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                           onPressed: () {
                             setState(() => item.quantity++);
                           },
                         ),
                       ],
                     ),
+                 ),
+                ],
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+
+            // SUBITEMS (si tiene)
+            if (hasSubItems) ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                   border: Border.all(color: Colors.grey.shade200),
+                ),
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  children: item.subItems!.map((sub) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(sub.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                        
+                        // Control cantidad subitem compacto
+                         Container(
+                           decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                           ),
+                           height: 36,
+                           child: Row(
+                             mainAxisSize: MainAxisSize.min,
+                             children: [
+                               RepeatingIconButton(
+                                 icon: const Icon(Icons.remove, size: 16),
+                                 padding: EdgeInsets.zero,
+                                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                 onPressed: sub.quantity > 0 ? () {
+                                    setState(() {
+                                      sub.quantity--;
+                                      item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
+                                    });
+                                 } : null,
+                               ),
+                               Padding(
+                                 padding: const EdgeInsets.symmetric(horizontal: 8),
+                                 child: Text('${sub.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                               ),
+                               RepeatingIconButton(
+                                 icon: const Icon(Icons.add, size: 16),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  onPressed: () {
+                                    setState(() {
+                                      sub.quantity++;
+                                      item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
+                                    });
+                                 },
+                               ),
+                             ],
+                           ),
+                         )
+                      ],
+                    ),
+                  )).toList(),
+                ),
+              ),
+              // Total visual para subitems
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Text('Total Calculado: ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const SizedBox(width: 8),
+                     Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Text('${item.quantity}', style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold, fontSize: 16)),
+                     ),
                   ],
                 ),
-              ],
+              ),
+            ],
+
+            // CAMPO DE OBSERVACIONES (Full width)
+            TextFormField(
+              initialValue: item.observations,
+              decoration: InputDecoration(
+                labelText: 'Estado / Observaciones',
+                hintText: 'Ingrese detalles del estado físico...',
+                floatingLabelBehavior: FloatingLabelBehavior.auto,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                isDense: true,
+              ),
+              maxLines: 2,
+              minLines: 1,
+              onChanged: (val) => item.observations = val,
             ),
           ],
         ),
