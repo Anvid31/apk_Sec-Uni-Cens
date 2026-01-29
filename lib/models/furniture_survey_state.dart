@@ -26,6 +26,7 @@ class FurnitureSurveyState extends ChangeNotifier {
   String latitud = '';
   String longitud = '';
   String? tipoAcceso;
+  String observacionesAcceso = '';
 
   bool riesgoCierre = false;
   String motivoCierre = '';
@@ -150,6 +151,7 @@ class FurnitureSurveyState extends ChangeNotifier {
     String? latitud,
     String? longitud,
     String? tipoAcceso,
+    String? observacionesAcceso,
     bool? riesgoCierre,
     String? motivoCierre,
   }) {
@@ -171,6 +173,7 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (latitud != null) this.latitud = latitud;
     if (longitud != null) this.longitud = longitud;
     if (tipoAcceso != null) this.tipoAcceso = tipoAcceso;
+    if (observacionesAcceso != null) this.observacionesAcceso = observacionesAcceso;
     if (riesgoCierre != null) this.riesgoCierre = riesgoCierre;
     if (motivoCierre != null) this.motivoCierre = motivoCierre;
     notifyListeners();
@@ -384,6 +387,7 @@ class FurnitureSurveyState extends ChangeNotifier {
               'latitud': latitud,
               'longitud': longitud,
               'tipoAcceso': tipoAcceso,
+              'observacionesAcceso': observacionesAcceso,
             },
            'riesgos': {
               'riesgoCierre': riesgoCierre,

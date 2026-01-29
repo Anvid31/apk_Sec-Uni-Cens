@@ -20,7 +20,6 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
 
   final TextEditingController _otrosEspaciosController = TextEditingController();
   final TextEditingController _proyectosEjecucionController = TextEditingController();
-  final TextEditingController _serviciosPublicosController = TextEditingController(); // Otros
   // final TextEditingController _electrodomesticosController = TextEditingController(); // Removed
 
 
@@ -94,7 +93,6 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
     _otrosEspaciosController.text = _surveyState.descripcionOtrosEspacios;
 
     _proyectosEjecucionController.text = _surveyState.proyectosEjecucion;
-    _serviciosPublicosController.text = _surveyState.serviciosPublicos;
     
     _hasEnergy = _surveyState.tieneEnergia;
     _fuenteEnergia = _surveyState.fuenteEnergia;
@@ -219,7 +217,7 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
         descripcionOtrosEspacios: _otrosEspaciosController.text,
 
         proyectosEjecucion: _proyectosEjecucionController.text,
-        serviciosPublicos: _serviciosPublicosController.text,
+        serviciosPublicos: '',
         
         tieneEnergia: _hasEnergy,
         fuenteEnergia: _hasEnergy ? _fuenteEnergia : '', // Usar variable local string
@@ -247,6 +245,13 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
         context,
         const FurniturePhotosPage(),
         stepNumber: 4,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor diligencie todos los campos obligatorios'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -686,7 +691,6 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
               const SizedBox(height: 12),
               CustomTextField(
                 controller: _proyectosEjecucionController,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 label: 'Proyectos en ejecución y ejecutados de obras por impuesto y la entidad a cargo',
                 hintText: 'Remodelaciones, dotaciones...',
                 prefixIcon: Icons.engineering,
@@ -735,15 +739,6 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
                    _buildRadioOption('Bombonas (Cilindro)', 'Bombonas', _fuenteGas, (v) => setState(() => _fuenteGas = v), Icons.propane),
                 ],
               ),
-
-              CustomTextField(
-                controller: _serviciosPublicosController,
-                validator: (v) => null, // Explícitamente opcional para sobreescribir el default require
-                label: 'Otros servicios públicos (Opcional)',
-                prefixIcon: Icons.settings_input_component,
-                maxLines: 1,
-              ),
-              const SizedBox(height: 12),
 
               const SizedBox(height: 12),
               const Text(

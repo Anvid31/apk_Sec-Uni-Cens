@@ -101,6 +101,13 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
         const FurnitureInfrastructurePage(),
         stepNumber: 3,
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor diligencie todos los campos obligatorios'),
+           backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -121,14 +128,6 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CustomNumberField(
-                  controller: _numAlumnosController,
-                  label: 'Número total de alumnos matriculados',
-                  icon: Icons.groups,
-                  readOnly: true,
-                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -136,6 +135,7 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
                         controller: _numMujeresController,
                         label: 'Cant. Mujeres',
                         icon: Icons.female,
+                        isRequired: true,
                         validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
                         onChanged: (_) {}, // Trigger listener
                       ),
@@ -146,6 +146,7 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
                         controller: _numHombresController,
                         label: 'Cant. Hombres',
                         icon: Icons.male,
+                        isRequired: true,
                         validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
                         onChanged: (_) {}, // Trigger listener
                       ),
@@ -154,9 +155,19 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
                 ),
                 const SizedBox(height: 12),
                 CustomNumberField(
+                  controller: _numAlumnosController,
+                  label: 'Número total de alumnos matriculados',
+                  icon: Icons.groups,
+                  readOnly: true,
+                  isRequired: true,
+                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 12),
+                CustomNumberField(
                   controller: _numDocentesController,
                   label: 'Número de docentes asignados',
                   icon: Icons.person_pin,
+                  isRequired: true,
                    validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 12),
@@ -164,11 +175,20 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
                   controller: _aniosFuncionamientoController,
                   label: 'Años de funcionamiento de la sede',
                   icon: Icons.history,
+                  isRequired: true,
                   validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
                 ),
                 
                 const SizedBox(height: 24),
-                const Text('Niveles educativos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text.rich(
+                  TextSpan(
+                    text: 'Niveles educativos',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                    children: [
+                      TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
                 ..._availableLevels.map((level) {
                   return CheckboxListTile(
                     title: Text(level),
@@ -187,7 +207,15 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
                 }),
 
                 const SizedBox(height: 24),
-                const Text('Jornada', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text.rich(
+                  TextSpan(
+                    text: 'Jornada',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                    children: [
+                      TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
                 DropdownButtonFormField<String>(
                   value: _selectedJornada,
                   items: _jornadaOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),

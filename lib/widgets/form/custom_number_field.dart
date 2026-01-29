@@ -10,6 +10,7 @@ class CustomNumberField extends StatelessWidget {
   final TextEditingController? controller;
   final IconData? icon;
   final bool readOnly;
+  final bool isRequired;
   
   const CustomNumberField({
     super.key,
@@ -21,6 +22,7 @@ class CustomNumberField extends StatelessWidget {
     this.controller,
     this.icon,
     this.readOnly = false,
+    this.isRequired = false,
   });
 
   @override
@@ -36,7 +38,15 @@ class CustomNumberField extends StatelessWidget {
           FilteringTextInputFormatter.digitsOnly,
         ],
         decoration: InputDecoration(
-          labelText: label,
+          label: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: label),
+                if (isRequired)
+                  const TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+              ],
+            ),
+          ),
           suffixText: suffix,
           prefixIcon: icon != null ? Icon(icon) : null,
           filled: readOnly,

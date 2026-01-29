@@ -42,11 +42,11 @@ class _FurniturePhotosPageState extends State<FurniturePhotosPage> {
     // La lista visual es: Panorámica, Tablero, [Cocina], Comedor, Interna
     
     if (_photoPanoramica == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto Panorámica es obligatoria')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Frente es obligatoria')));
       return;
     }
     if (_photoTablero == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Tablero es obligatoria')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula es obligatoria')));
       return;
     }
 
@@ -60,7 +60,7 @@ class _FurniturePhotosPageState extends State<FurniturePhotosPage> {
       }
     } else {
        if (_photoComedor == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Comedor es obligatoria')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula es obligatoria')));
         return;
       } 
     }

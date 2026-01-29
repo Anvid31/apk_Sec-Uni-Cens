@@ -64,17 +64,45 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirmar Envío'),
-          content: const Text('¿Está seguro de que desea finalizar y enviar la encuesta? Verifique que toda la información esté correcta.'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check_circle_outline, size: 48, color: Colors.green.shade600),
+              ),
+              const SizedBox(height: 16),
+              const Text('Confirmar Envío', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            '¿Está seguro de que desea finalizar y enviar la encuesta?\n\nVerifique que toda la información esté correcta antes de continuar.',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
           actions: [
-            TextButton(
+            OutlinedButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: BorderSide(color: Colors.grey.shade300),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade700)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text('Enviar', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                elevation: 0,
+              ),
+              child: const Text('Enviar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -145,7 +173,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
 
   Widget _buildDotationSection() {
     return Container(
-      margin: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 40),
+      margin: const EdgeInsets.only(top: 24, left: 0, right: 0, bottom: 40),
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.indigo.shade50,
@@ -200,7 +228,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                               const Text('¿Cuenta la sede educativa con comedor-cocina?', style: TextStyle(fontWeight: FontWeight.w600)),
                               const SizedBox(height: 4),
                               Text(
-                                'Si su respuesa es SÍ indiquenos en la casilla de observaciones que elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN',
+                                '¿Qué elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN?',
                                 style: TextStyle(fontSize: 12, color: Colors.indigo.shade800, fontStyle: FontStyle.italic),
                               ),
                            ],
@@ -219,8 +247,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                       controller: _necMobiliarioCocinaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Mobiliario de Cocina',
-                        hintText: 'mesón con azafates, mesón de trabajo cocina...',
-                        helperText: '(mesón con azafates, mesón de trabajo cocina, mesa de cafeteria plegable, estufa enana de un quemador, estufa lineal de tres quemadores, etc)',
+                        hintText: ' 1 mesón con azafates,  3 mesones de trabajo cocina,  2 mesas de cafeteria plegable, 1 estufa enana de un quemador, estufa lineal de tres quemadores, etc',
                         helperMaxLines: 3,
                         border: OutlineInputBorder(),
                         isDense: true,
@@ -234,8 +261,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                       controller: _necUtensiliosCocinaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Menaje, Equipo y Utensilios de Cocina',
-                        hintText: 'Nevera, congelador, licuadora...',
-                        helperText: '(Nevera, congelador, licuadora, recipiente plastico, balde plastico,caldero, ollas aluminio recortado, olla a presión, olleta, paila, sartén, etc)',
+                        hintText: '1 Nevera, 2 congeladores, 1 licuadora, 1 recipiente plastico, etc',
                         helperMaxLines: 3,
                         border: OutlineInputBorder(),
                         isDense: true,
@@ -273,7 +299,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                              const Text('¿Considera necesario la dotación de Mobiliario para la Atención de Emergencias?', style: TextStyle(fontWeight: FontWeight.w600)),
                              const SizedBox(height: 4),
                              Text(
-                               'Si su respuesa es SÍ indiquenos en la casilla de observaciones que elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN',
+                               '¿Qué elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN?',
                                style: TextStyle(fontSize: 12, color: Colors.indigo.shade800, fontStyle: FontStyle.italic),
                              ),
                            ],
@@ -292,8 +318,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                       controller: _necEmergenciaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Mobiliario para la Atención de Emergencias',
-                        hintText: 'camilla, Escalinata 2 peldaños...',
-                        helperText: '(camilla, Escalinata 2 peldaños, botiquin gavinete fijo, caneca riesgo biologico, contenedor de punzantes, báscula con tallimetro, etc)',
+                        hintText: '1 Camilla, 2 botiquines gavinete fijo, 6 canecas riesgo biologico, 3 contenedores de punzantes, báscula con tallimetro, etc',
                         helperMaxLines: 3,
                         border: OutlineInputBorder(),
                         isDense: true,
@@ -316,7 +341,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
     final hasSubItems = item.subItems != null && item.subItems!.isNotEmpty;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -488,8 +513,8 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
             TextFormField(
               initialValue: item.observations,
               decoration: InputDecoration(
-                labelText: 'Estado / Observaciones',
-                hintText: 'Ingrese detalles del estado físico...',
+                labelText: 'Observaciones',
+                hintText: 'Ingrese las observaciones necesarias...',
                 floatingLabelBehavior: FloatingLabelBehavior.auto,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
