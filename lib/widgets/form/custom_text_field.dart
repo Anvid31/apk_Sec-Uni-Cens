@@ -14,6 +14,7 @@ class CustomTextField extends StatefulWidget {
   final VoidCallback? onSuffixIconPressed;
   final bool obscureText;
   final bool enabled;
+  final bool? showRequiredIndicator; // Control manual del asterisco
   
   const CustomTextField({
     super.key,
@@ -30,6 +31,7 @@ class CustomTextField extends StatefulWidget {
     this.onSuffixIconPressed,
     this.obscureText = false,
     this.enabled = true,
+    this.showRequiredIndicator,
   });
 
   @override
@@ -112,7 +114,7 @@ class _CustomTextFieldState extends State<CustomTextField> with SingleTickerProv
                   fontFamily: 'Roboto', // Ensure font consistency
                 ),
                 children: [
-                  if (widget.validator != null)
+                  if (widget.showRequiredIndicator ?? widget.validator != null)
                     const TextSpan(
                       text: ' *',
                       style: TextStyle(

@@ -691,10 +691,12 @@ class _FurnitureInfrastructurePageState extends State<FurnitureInfrastructurePag
               const SizedBox(height: 12),
               CustomTextField(
                 controller: _proyectosEjecucionController,
-                label: 'Proyectos en ejecución y ejecutados de obras por impuesto y la entidad a cargo',
+                label: 'Proyectos en ejecución y ejecutados con la entidad a cargo',
                 hintText: 'Remodelaciones, dotaciones...',
                 prefixIcon: Icons.engineering,
                 maxLines: 2,
+                validator: (v) => null, // Opcional
+                showRequiredIndicator: false, // Ocultar asterisco
               ),
               const SizedBox(height: 12),
               
