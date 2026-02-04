@@ -106,7 +106,6 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
     _principalNameController.text = _surveyState.nombreRector;
     _principalContactController.text = _surveyState.contactoRector;
     _principalEmailController.text = _surveyState.emailRector;
-    _daneController.text = _surveyState.codigoDane;
     
     _latitudeController.text = _surveyState.latitud;
     _longitudeController.text = _surveyState.longitud;
@@ -148,7 +147,6 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
         nombreRector: _principalNameController.text,
         contactoRector: _principalContactController.text,
         emailRector: _principalEmailController.text,
-        codigoDane: '', // Eliminado del formulario
         latitud: _latitudeController.text,
         longitud: _longitudeController.text,
         tipoAcceso: _selectedAccessType,

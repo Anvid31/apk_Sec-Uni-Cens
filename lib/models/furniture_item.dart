@@ -26,7 +26,8 @@ class FurnitureItem {
   });
 
   Map<String, dynamic> toJson() {
-     // Si hay subItems editados, actualizamos la descripción antes de serializar
+     // Si hay subItems, actualizamos la descripción para visualización rápida,
+     // pero también deberíamos guardar la estructura si queremos datos puros.
      if (subItems != null && subItems!.isNotEmpty) {
        description = subItems!.map((i) => '${i.quantity} ${i.name}').join(', ');
      }
@@ -38,6 +39,12 @@ class FurnitureItem {
       'description': description,
       'quantity': quantity,
       'observations': observations,
+      // Guardar subItems tal cual para consultas estructuradas en MongoDB
+      if (subItems != null && subItems!.isNotEmpty)
+        'subItems': subItems!.map((s) => {
+          'name': s.name,
+          'quantity': s.quantity
+        }).toList(),
     };
   }
 }

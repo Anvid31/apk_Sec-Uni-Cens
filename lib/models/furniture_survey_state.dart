@@ -21,7 +21,6 @@ class FurnitureSurveyState extends ChangeNotifier {
   String emailRector = '';
   String nombreInstitucionPrincipal = '';
   String nombreSedeEducativa = '';
-  String codigoDane = '';
 
   String latitud = '';
   String longitud = '';
@@ -147,7 +146,6 @@ class FurnitureSurveyState extends ChangeNotifier {
     String? emailRector,
     String? nombreInstitucionPrincipal,
     String? nombreSedeEducativa,
-    String? codigoDane,
     String? latitud,
     String? longitud,
     String? tipoAcceso,
@@ -169,7 +167,6 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (emailRector != null) this.emailRector = emailRector;
     if (nombreInstitucionPrincipal != null) this.nombreInstitucionPrincipal = nombreInstitucionPrincipal;
     if (nombreSedeEducativa != null) this.nombreSedeEducativa = nombreSedeEducativa;
-    if (codigoDane != null) this.codigoDane = codigoDane;
     if (latitud != null) this.latitud = latitud;
     if (longitud != null) this.longitud = longitud;
     if (tipoAcceso != null) this.tipoAcceso = tipoAcceso;
@@ -346,15 +343,16 @@ class FurnitureSurveyState extends ChangeNotifier {
   }
 
   Future<void> submit() async {
-      // Filtrar items
+      // Filtrar items: Solo guardar los que tienen cantidad > 0 o alguna observación escrita
       final filledItems = items.where((item) => item.quantity > 0 || item.observations.isNotEmpty).toList();
 
+      // Mapeo corregido para coincidir con la UI actual (Fotos Page)
       final photosMap = <String, String>{};
       if (photoPanoramica != null) photosMap['panoramica_sede'] = photoPanoramica!;
-      if (photoTablero != null) photosMap['tablero_general'] = photoTablero!;
+      if (photoTablero != null) photosMap['aula_1'] = photoTablero!;    // Antes tablero_general
       if (photoCocina != null) photosMap['cocina'] = photoCocina!;
-      if (photoComedor != null) photosMap['comedor'] = photoComedor!;
-      if (photoInterna != null) photosMap['interna_sede'] = photoInterna!;
+      if (photoComedor != null) photosMap['aula_2'] = photoComedor!;    // La variable se llama photoComedor pero en UI es Aula 2
+      if (photoInterna != null) photosMap['comedor'] = photoInterna!;   // La variable se llama photoInterna pero en UI es Comedor
 
       final surveyId = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -362,10 +360,9 @@ class FurnitureSurveyState extends ChangeNotifier {
         'id': surveyId,
         'tipoFormulario': 'mobiliario',
         'timestamp': DateTime.now().toIso8601String(),
-        'tipoEncuesta': 'mobiliario',
         'datos': {
           'informacionGeneral': {
-            'fecha': fecha.toString().split(' ')[0],
+            'fecha': fecha.toIso8601String(),
             'departamento': departamento,
             'municipio': municipio,
             'zona': zona,
@@ -395,45 +392,42 @@ class FurnitureSurveyState extends ChangeNotifier {
             },
           },
           'informacionCobertura': {
-             'numAlumnos': numAlumnos,
-             'numMujeres': numMujeres,
-             'numHombres': numHombres,
-             'numDocentes': numDocentes,
+             'numAlumnos': int.tryParse(numAlumnos) ?? 0,
+             'numMujeres': int.tryParse(numMujeres) ?? 0,
+             'numHombres': int.tryParse(numHombres) ?? 0,
+             'numDocentes': int.tryParse(numDocentes) ?? 0,
              'aniosFuncionamiento': aniosFuncionamiento,
              'nivelesEducativos': nivelesEducativos,
           },
           'diagnosticoInfraestructura': {
+            // Espacios
             'hasSalones': hasSalones, 'cantidadSalones': cantidadSalones, 'estadoSalones': estadoSalones,
             'hasComedor': hasComedor, 'cantidadComedor': cantidadComedor, 'estadoComedor': estadoComedor,
             'hasCocina': hasCocina, 'cantidadCocina': cantidadCocina, 'estadoCocina': estadoCocina,
             'hasSalonReuniones': hasSalonReuniones, 'cantidadSalonReuniones': cantidadSalonReuniones, 'estadoSalonReuniones': estadoSalonReuniones,
             'hasHabitaciones': hasHabitaciones, 'cantidadHabitaciones': cantidadHabitaciones, 'estadoHabitaciones': estadoHabitaciones,
             'hasBanos': hasBanos, 'cantidadBanos': cantidadBanos, 'estadoBanos': estadoBanos,
-            'hasOtros': hasOtros, 'cantidadOtros': cantidadOtros, 'estadoOtros': estadoOtros,
-            'descripcionOtrosEspacios': descripcionOtrosEspacios,
+            'hasOtros': hasOtros, 'cantidadOtros': cantidadOtros, 'estadoOtros': estadoOtros, 'descripcionOtrosEspacios': descripcionOtrosEspacios,
+            
+            // Servicios
             'proyectosEjecucion': proyectosEjecucion,
-            'serviciosPublicos': serviciosPublicos,
-            'tieneEnergia': tieneEnergia,
-            'fuenteEnergia': fuenteEnergia,
-            'tieneAgua': tieneAgua,
-            'fuenteAgua': fuenteAgua,
-            'tieneGas': tieneGas,
-            'fuenteGas': fuenteGas,
+            'energia': { 'tiene': tieneEnergia, 'fuente': fuenteEnergia },
+            'agua': { 'tiene': tieneAgua, 'fuente': fuenteAgua },
+            'gas': { 'tiene': tieneGas, 'fuente': fuenteGas },
+            'internet': { 'tiene': tieneInternet },
             
-            // Electrodomésticos mapping
-            'hasNevera': hasNevera, 'cantidadNevera': cantidadNevera,
-            'hasTelevisor': hasTelevisor, 'cantidadTelevisor': cantidadTelevisor,
-            'hasComputador': hasComputador, 'cantidadComputador': cantidadComputador,
-            'hasVentilador': hasVentilador, 'cantidadVentilador': cantidadVentilador,
-            'hasVideoBeam': hasVideoBeam, 'cantidadVideoBeam': cantidadVideoBeam,
-            'hasImpresora': hasImpresora, 'cantidadImpresora': cantidadImpresora,
-            'hasEquipoSonido': hasEquipoSonido, 'cantidadEquipoSonido': cantidadEquipoSonido,
+            // Electrodomésticos (Estructura optimizada)
+            'electrodomesticos': {
+                'nevera': {'tiene': hasNevera, 'cantidad': cantidadNevera},
+                'televisor': {'tiene': hasTelevisor, 'cantidad': cantidadTelevisor},
+                'computador': {'tiene': hasComputador, 'cantidad': cantidadComputador},
+                'ventilador': {'tiene': hasVentilador, 'cantidad': cantidadVentilador},
+                'videoBeam': {'tiene': hasVideoBeam, 'cantidad': cantidadVideoBeam},
+                'impresora': {'tiene': hasImpresora, 'cantidad': cantidadImpresora},
+                'equipoSonido': {'tiene': hasEquipoSonido, 'cantidad': cantidadEquipoSonido},
+            },
             'otrosElectrodomesticos': otrosElectrodomesticos,
-            
-            'electrodomesticos': electrodomesticos, // Legacy
-            'tieneInternet': tieneInternet,
           },
-          'dane': codigoDane,
           'items': filledItems.map((e) => e.toJson()).toList(),
           'dotacionCocina': {
             'tieneCocina': tieneCocina,
@@ -447,7 +441,6 @@ class FurnitureSurveyState extends ChangeNotifier {
           'fotos': photosMap,
         },
         'nombreInstitucion': nombreSedeEducativa,
-        'codigoDane': codigoDane,
       };
 
       await AutoSyncService.scheduleImmediateSync(surveyData);

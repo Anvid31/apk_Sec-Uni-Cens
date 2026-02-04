@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -34,9 +35,9 @@ class AutoSyncService {
       _startPeriodicCheck();
       
       _isInitialized = true;
-      print('🚀 AutoSyncService inicializado exitosamente (versión compatible)');
+      if (kDebugMode) print('🚀 AutoSyncService inicializado exitosamente (versión compatible)');
     } catch (e) {
-      print('❌ Error inicializando AutoSyncService: $e');
+      if (kDebugMode) print('❌ Error inicializando AutoSyncService: $e');
       rethrow;
     }
   }
@@ -49,7 +50,7 @@ class AutoSyncService {
       
       // VALIDACIÓN ANTI-DUPLICADOS: Verificar si ya existe una encuesta con los mismos datos
       if (await _isDuplicateSurvey(surveyData)) {
-        print('⚠️ Encuesta duplicada detectada, evitando envío múltiple');
+        if (kDebugMode) print('⚠️ Encuesta duplicada detectada, evitando envío múltiple');
         throw Exception('Esta encuesta ya ha sido enviada o está en proceso de envío');
       }
       

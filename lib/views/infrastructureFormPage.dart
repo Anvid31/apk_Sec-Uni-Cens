@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // import added for kDebugMode
 import 'package:provider/provider.dart';
 import '../models/infrastructureInfo.dart';
 import '../models/survey_state.dart';
@@ -43,12 +44,16 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           _otrosEspaciosController.text = infrastructureInfo.descripcionOtrosEspacios;
           _otroPredioController.text = infrastructureInfo.descripcionOtroPredio;
         });
-        print('📋 Datos de infraestructura cargados:');
-        print('   - Propiedad: ${infrastructureInfo.propiedadPredio}');
-        print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
-        print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
+        if (kDebugMode) {
+          print('📋 Datos de infraestructura cargados:');
+          print('   - Propiedad: ${infrastructureInfo.propiedadPredio}');
+          print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
+          print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
+        }
       } else {
-        print('📋 No hay datos previos de infraestructura, usando valores por defecto');
+        if (kDebugMode) {
+          print('📋 No hay datos previos de infraestructura, usando valores por defecto');
+        }
         // infrastructureInfo ya está inicializada con valores por defecto
         _proyectosController.clear();
         _otrosEspaciosController.clear();

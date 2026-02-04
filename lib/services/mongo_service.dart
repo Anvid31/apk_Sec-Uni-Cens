@@ -39,6 +39,7 @@ class MongoService {
       if (surveyData.containsKey('tipoFormulario')) {
         if (surveyData['tipoFormulario'] == 'mobiliario') {
           targetCollection = 'inventario_mobiliario'; // Colección también en español
+          print('📦 Detectado formulario de MOBILIARIO -> Colección: $targetCollection');
         }
         // Agrega más tipos aquí si es necesario
       } else if (surveyData.containsKey('formType')) {

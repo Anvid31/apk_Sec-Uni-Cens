@@ -46,23 +46,22 @@ class _FurniturePhotosPageState extends State<FurniturePhotosPage> {
       return;
     }
     if (_photoTablero == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula es obligatoria')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula 1 es obligatoria')));
       return;
     }
 
-    // Verificar logicamente cual es la 3ra foto
-    // Si needsCocina es true, la 3ra es Cocina.
-    // Si needsCocina es false, la 3ra es Comedor.
+    // La foto del Aula 2 (variable _photoComedor) es la 3ra obligatoria del set base
+    if (_photoComedor == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula 2 es obligatoria')));
+      return;
+    }
+
+    // Si tiene cocina, esta se vuelve la 4ta obligatoria
     if (_surveyState.hasCocina) {
        if (_photoCocina == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto de la Cocina es obligatoria')));
         return;
       }
-    } else {
-       if (_photoComedor == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La Foto del Aula es obligatoria')));
-        return;
-      } 
     }
     
     // Guardar en estado
@@ -140,7 +139,7 @@ class _FurniturePhotosPageState extends State<FurniturePhotosPage> {
             const SizedBox(height: 16),
             
             PhotoCaptureField(
-              label: 'Foto Cocina/Comedor',
+              label: 'Foto Comedor',
               imagePath: _photoInterna,
               onImageSelected: (path) => setState(() => _photoInterna = path),
               required: true,
