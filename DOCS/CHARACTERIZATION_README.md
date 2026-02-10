@@ -19,7 +19,7 @@ Este tutorial le guiará a través del flujo básico para completar un diagnóst
 **Paso 2: Información Institucional**
 
 1. La primera pantalla es "Información General".
-2. Ingrese el código DANE o nombre de la sede.
+2. Ingrese el nombre de la sede.
 3. El sistema puede intentar autocompletar datos si hay conexión.
 4. Complete los campos de contacto del rector/encargado.
 
@@ -92,7 +92,7 @@ El estado de la aplicación se gestiona mediante un `ChangeNotifier` central (`S
 | Clase Modelo             | Descripción                | Campos Clave                                                      |
 | ------------------------ | -------------------------- | ----------------------------------------------------------------- |
 | `GeneralInfo`            | Metadatos de la encuesta   | Fecha, encuestador, ID dispositivo.                               |
-| `InstitutionalInfo`      | Datos de la sede           | Nombre sede, código DANE, datos rector, ubicación GPS.            |
+| `InstitutionalInfo`      | Datos de la sede           | Nombre sede, datos rector, ubicación GPS.                         |
 | `CoverageInfo`           | Estadísticas poblacionales | Matrícula (H/M), docentes, grados, jornadas.                      |
 | `InfrastructureInfo`     | Estado físico              | Estado paredes, techos, pisos, baños, riesgos.                    |
 | `ElectricityInfo`        | Servicios de energía       | Operador, tipo de conexión, estado redes internas, transformador. |

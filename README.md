@@ -301,7 +301,7 @@ Módulo especializado para el levantamiento de inventario físico:
 
 1. **Información General**:
    - Geolocalización automática de la sede
-   - Filtros inteligentes de ubicación (Norte de Santander, Cesar, Bolívar)
+   - Selectores de ubicación (Zonas de operación CENS)
    - Datos de contacto y directivos
 2. **Cobertura de Espacios**:
    - Registro de cantidad de aulas y espacios disponibles
@@ -310,11 +310,11 @@ Módulo especializado para el levantamiento de inventario físico:
    - Estado físico de los espacios (Pisos, Muros, TECHOS)
    - Condiciones de iluminación y ventilación
 4. **Inventario Detallado**:
-   - Conteo por estado (Bueno, Regular, Malo) de:
+   - Registro de cantidad total y observaciones de:
      - Pupitres (Unipersonales/Bipersonales)
      - Mesas y Sillas (Docente/Estudiante)
      - Tableros y Muebles de almacenamiento
-   - Cálculo automático de déficit/requerimientos
+   - Registro de requerimientos manuales
 5. **Evidencias**: Fotografías específicas del estado del mobiliario
 
 ### 🔄 **NUEVO: Envío Automático Garantizado**
@@ -378,7 +378,7 @@ Para soporte técnico o reportar problemas, contacte al equipo de desarrollo.
 
 - **Flujo independiente**: Interfaz dedicada exclusivamente al inventario
 - **Gestión de departamentos**: Base de datos filtrada para zonas de operación CENS
-- **Validación en tiempo real**: Cálculo de totales y estados del mobiliario
+- **Validación en tiempo real**: Cálculo de totales agregados
 - **Integración completa**: Compatible con el sistema de sincronización automática
 
 ### 🔄 Sistema de Sincronización Automática (v1.2.0)
