@@ -1,8 +1,15 @@
 # CaracT Móvil - Caracterización CENS
 
-Aplicación Flutter para caracterización de sedes educativas CENS (Centros Educativos de Nivel Superior).
+Aplicación Flutter para caracterización de sedes educativas CENS (Centros Educativos de Nivel Superior) e inventario de mobiliario.
 
 ## 📱 Características
+
+### 🏛️ Módulos Especializados
+
+La aplicación cuenta con dos módulos principales de recolección de información:
+
+1. **Caracterización de Sedes**: Diagnóstico completo de infraestructura y servicios.
+2. **Inventario de Mobiliario**: **(NUEVO)** Registro detallado del estado y cantidad de mobiliario escolar.
 
 ### ✅ Formularios Inteligentes
 
@@ -19,12 +26,12 @@ Aplicación Flutter para caracterización de sedes educativas CENS (Centros Educ
 - **Sincronización inteligente** - Envía automáticamente cuando detecta internet
 - **Widget de estado en tiempo real** - Muestra conectividad y formularios pendientes
 
-### 📤 Exportación y Envío
+### 📤 Almacenamiento y Sincronización
 
-- Exportación de datos en formato CSV+ ZIP
-- Envío automático por correo electrónico
-- Compartir archivos nativamente
+- **Sincronización directa con Base de Datos**
 - Almacenamiento local con Hive
+- Persistencia de datos offline
+- Monitoreo de estado de carga en tiempo real
 
 ### 🎨 Interfaz de Usuario
 
@@ -48,31 +55,7 @@ cd caracT_Movil
 flutter pub get
 ```
 
-### 3. Configurar variables de entorno (IMPORTANTE)
-
-**Para seguridad, las credenciales de correo se manejan con variables de entorno:**
-
-1. Copie el archivo de ejemplo:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edite el archivo `.env` con sus credenciales reales:
-
-   ```env
-   DESTINATION_EMAIL=tu_correo_destino@gmail.com
-   SENDER_EMAIL=tu_cuenta_gmail@gmail.com
-   SENDER_PASSWORD=tu_contraseña_de_aplicacion_16_caracteres
-   ```
-
-3. **Para Gmail, genere una contraseña de aplicación:**
-   - Vaya a [Google Account Security](https://myaccount.google.com/security)
-   - Active la verificación en 2 pasos
-   - Genere una contraseña de aplicación para "Correo"
-   - Use esa contraseña en `SENDER_PASSWORD` (NO su contraseña normal)
-
-### 4. Ejecutar la aplicación
+### 3. Ejecutar la aplicación
 
 ```bash
 flutter run
@@ -119,41 +102,16 @@ El sistema de sincronización automática garantiza que **ningún formulario se 
    ↓
 6. Al detectar red → Envía automáticamente
    ↓
-7. Confirmación por correo electrónico
+7. Sincronización confirmada en base de datos
 ```
 
 #### Tecnología Subyacente
 
-- **Sistema de Sincronización Personalizado**: Tareas en segundo plano usando Dart Timers
+- **AutoSync Service**: Servicio robusto de gestión de colas de envío
 - **Connectivity Plus**: Monitoreo de red en tiempo real
-- **Almacenamiento en Memoria**: Cache temporal para formularios pendientes
-- **Monitoreo Continuo**: Verificación automática de conectividad cada 30 segundos
-
-### 🎮 Página de Pruebas
-
-#### Acceso
-
-- **FloatingActionButton azul** (⚡) en la página "Información General"
-- Permite probar todas las funcionalidades del sistema
-
-#### Funcionalidades de Prueba
-
-1. **Simular Envío**: Crea formularios de prueba para sincronización
-2. **Actualizar Estado**: Verifica el estado actual del sistema
-3. **Limpiar Pendientes**: Elimina datos de prueba
-4. **Monitoreo en Vivo**: Widget de estado en tiempo real
-
-#### Cómo Probar
-
-```
-1. Ir a "Información General" → Presionar botón azul ⚡
-2. Presionar "Simular Envío de Encuesta"
-3. Desactivar WiFi y datos móviles
-4. Observar cambio de estado a "Sin conexión"
-5. Reactivar conexión a internet
-6. Ver sincronización automática en acción
-7. Cerrar app para confirmar funcionamiento en segundo plano
-```
+- **MongoDB**: Almacenamiento directo en base de datos central
+- **Persistencia Local**: Cache temporal para formularios pendientes
+- **Monitoreo Continuo**: Verificación automática de conectividad cada 5 minutos
 
 ### 🎨 Interfaz Visual
 
@@ -166,7 +124,7 @@ El sistema de sincronización automática garantiza que **ningún formulario se 
 
 #### Diálogo de Envío Mejorado
 
-```
+````
 ┌─────── Enviar Formulario ───────┐
 │                                 │
 │  ┌── ENVÍO AUTOMÁTICO ──┐       │
@@ -174,7 +132,7 @@ El sistema de sincronización automática garantiza que **ningún formulario se 
 │  └─────────────────────┘       │
 │                                 │
 │  ┌─ Opciones Adicionales ─┐     │
-│  │ Compartir│Email│Guardar │    │
+│  │    Guardar Localmente   │    │
 │  └─────────────────────────┘    │
 └─────────────────────────────────┘
 ```****
@@ -197,14 +155,14 @@ El sistema de sincronización automática garantiza que **ningún formulario se 
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-```
+````
 
 #### Dependencias Principales
 
 ```yaml
 dependencies:
-  connectivity_plus: ^5.0.2  # Monitoreo de conectividad
-  provider: ^6.1.1          # Gestión de estado
+  connectivity_plus: ^5.0.2 # Monitoreo de conectividad
+  provider: ^6.1.1 # Gestión de estado
 ```
 
 ### 🔍 Monitoreo y Logs
@@ -227,36 +185,33 @@ dependencies:
 
 ## 🔒 Seguridad
 
-- **NUNCA** suba el archivo `.env` a control de versiones
-- Use contraseñas de aplicación, no contraseñas normales
-- El archivo `.env` está en `.gitignore` por seguridad
-- Use `.env.example` como referencia para nuevas instalaciones
+- **NUNCA** suba credenciales o archivos sensibles a control de versiones
+- Mantenga sus claves de acceso seguras y fuera del código fuente
 
 ## 📁 Estructura del Proyecto
 
 ```
 lib/
 ├── config/                    # Configuraciones
-│   ├── email_config.dart     # Configuración centralizada de correo
-│   └── theme.dart            # Temas y estilos
+│   ├── theme.dart            # Temas y estilos
+│   └── ...
 ├── models/                    # Modelos de datos
 │   ├── survey_state.dart     # Estado principal de la encuesta
 │   ├── *_info.dart          # Modelos para cada sección
 │   └── ...
 ├── services/                  # Servicios y lógica de negocio
-│   ├── background_sync_service.dart  # 🆕 Sincronización automática
-│   ├── storage_service.dart          # Almacenamiento local (Hive)
-│   ├── email_service.dart            # Envío de correos
-│   ├── xml_export_service.dart       # Exportación CSV+ ZIP
-│   └── location_service.dart         # Servicios de ubicación
+│   ├── auto_sync_service.dart    # 🆕 Sincronización automática
+│   ├── storage_service.dart      # Almacenamiento local (Hive)
+│   ├── mongo_service.dart        # 🆕 Conexión con MongoDB
+│   └── location_service.dart     # Servicios de ubicación
 ├── utils/                     # Utilidades y helpers
 │   ├── form_navigator.dart    # Navegación entre formularios
 │   ├── permission_helper.dart # 🆕 Gestión de permisos
 │   └── location_data.dart     # Datos de ubicación
 ├── views/                     # Páginas de la aplicación
 │   ├── survey_form_page.dart          # Página principal
-│   ├── auto_sync_test_page.dart       # 🆕 Página de pruebas
 │   ├── observationsFormPage.dart      # 🆕 Con envío automático
+│   ├── furniture/                     # 🆕 Módulo de Mobiliario
 │   └── *FormPage.dart                 # Otras páginas de formularios
 ├── widgets/                   # Widgets reutilizables
 │   ├── sync_status_widget.dart        # 🆕 Widget de estado de sync
@@ -281,12 +236,13 @@ lib/
 
 - **Provider** - Gestión de estado reactiva
 - **Hive** - Base de datos local NoSQL ultrarrápida
-- **SQLite** - Almacenamiento relacional complementario
+- **MongoDB** - Base de datos principal para almacenamiento centralizado
 
 ### 🔄 **NUEVAS: Sincronización y Background**
 
-- **Sistema de Sincronización Personalizado** - Tareas en segundo plano usando timers de Dart
+- **AutoSync Service** - Servicio optimizado de sincronización en segundo plano
 - **Connectivity Plus** - Monitoreo de conectividad en tiempo real
+- **Flutter Local Notifications** - Notificaciones de estado de envío
 
 ### 📍 Servicios de Ubicación
 
@@ -298,12 +254,11 @@ lib/
 - **Image Picker** - Captura de fotografías desde cámara/galería
 - **Camera** - Control avanzado de cámara
 
-### 📤 Exportación y Comunicación
+### 📤 Sincronización de Datos
 
-- **Mailer** - Envío de correos electrónicos SMTP
-- **XML** - Generación de archivos CSVestructurados
-- **Archive** - Creación de archivos ZIP
-- **Share Plus** - Compartir archivos nativamente
+- **AutoSync Service** - Servicio de sincronización automática
+- **MongoDB** - Base de datos NoSQL distribuida
+- **Connectivity Plus** - Monitoreo de estado de red
 
 ### 🔒 Seguridad
 
@@ -317,12 +272,19 @@ lib/
 
 ## 📝 Uso de la Aplicación
 
-### 🚀 Flujo Principal
+### 🚀 Selección de Módulo
+
+Al iniciar, seleccione el tipo de registro que desea realizar:
+
+1. **Caracterización de Sedes**: Para diagnóstico general de la institución.
+2. **Inventario de Mobiliario**: Para conteo y valoración del mobiliario.
+
+### 🏫 Flujo: Caracterización de Sedes
 
 1. **Inicio**: Complete los datos básicos de la institución en "Información General"
 2. **Formularios**: Navegue por los 9 módulos de caracterización:
    - Información Institucional
-   - Cobertura y Conectividad  
+   - Cobertura y Conectividad
    - Infraestructura
    - Energía Eléctrica
    - Electrodomésticos
@@ -333,6 +295,28 @@ lib/
 4. **Revisión**: Verifique toda la información antes de enviar
 5. **🆕 Envío Automático**: Use la nueva opción principal "Envío Automático"
 
+### 🪑 Flujo: Inventario de Mobiliario (NUEVO)
+
+Módulo especializado para el levantamiento de inventario físico:
+
+1. **Información General**:
+   - Geolocalización automática de la sede
+   - Filtros inteligentes de ubicación (Norte de Santander, Cesar, Bolívar)
+   - Datos de contacto y directivos
+2. **Cobertura de Espacios**:
+   - Registro de cantidad de aulas y espacios disponibles
+   - Capacidad instalada vs. matrícula
+3. **Infraestructura**:
+   - Estado físico de los espacios (Pisos, Muros, TECHOS)
+   - Condiciones de iluminación y ventilación
+4. **Inventario Detallado**:
+   - Conteo por estado (Bueno, Regular, Malo) de:
+     - Pupitres (Unipersonales/Bipersonales)
+     - Mesas y Sillas (Docente/Estudiante)
+     - Tableros y Muebles de almacenamiento
+   - Cálculo automático de déficit/requerimientos
+5. **Evidencias**: Fotografías específicas del estado del mobiliario
+
 ### 🔄 **NUEVO: Envío Automático Garantizado**
 
 #### ✅ Ventajas del Nuevo Sistema
@@ -340,7 +324,7 @@ lib/
 - **Nunca pierde datos**: Formularios guardados aunque no haya internet
 - **Envío inteligente**: Se envía automáticamente al detectar conexión
 - **Funciona en background**: Incluso con la app cerrada
-- **Confirmación automática**: Recibe email cuando se envía exitosamente
+- **Confirmación automática**: Recibe notificacion cuando se envía exitosamente
 - **Estado visual**: Widget que muestra progreso en tiempo real
 
 #### 🎯 Cómo Usar el Envío Automático
@@ -356,7 +340,7 @@ lib/
    ↓
 5. Puede cerrar la app sin problemas
    ↓
-6. Recibirá email de confirmación cuando se envíe
+6. Recibirá notificacion de confirmación cuando se envíe
 ```
 
 #### 📊 Widget de Estado (Monitoreo Visual)
@@ -364,23 +348,9 @@ lib/
 El widget en la parte superior muestra:
 
 - **🟢 Verde**: "Conectado - Sincronizando automáticamente"
-- **🟠 Naranja**: "Sin conexión - Esperando conectividad"  
+- **🟠 Naranja**: "Sin conexión - Esperando conectividad"
 - **Contador**: Número de formularios pendientes de envío
 - **Botón "Sincronizar"**: Para forzar sincronización manual
-
-### 🧪 Página de Pruebas
-
-- **Acceso**: Botón azul ⚡ en "Información General"
-- **Función**: Probar todas las características del sistema automático
-- **Ideal para**: Verificar funcionamiento antes del trabajo de campo
-
-### 📤 Opciones de Envío Adicionales
-
-Además del envío automático, también puede:
-
-- **Compartir**: Envío mediante apps nativas del dispositivo
-- **Email**: Configuración manual de correo (requiere configuración)
-- **Guardar**: Almacenar archivo ZIP en el dispositivo
 
 ## 🤝 Contribución
 
@@ -399,6 +369,17 @@ Este proyecto es privado y está destinado únicamente para uso interno de la in
 Para soporte técnico o reportar problemas, contacte al equipo de desarrollo.
 
 ## 🆕 Últimas Mejoras Implementadas
+
+### 🪑 Nuevo Módulo de Mobiliario (v1.3.0)
+
+**Fecha**: Febrero 2026
+
+#### ✨ Características
+
+- **Flujo independiente**: Interfaz dedicada exclusivamente al inventario
+- **Gestión de departamentos**: Base de datos filtrada para zonas de operación CENS
+- **Validación en tiempo real**: Cálculo de totales y estados del mobiliario
+- **Integración completa**: Compatible con el sistema de sincronización automática
 
 ### 🔄 Sistema de Sincronización Automática (v1.2.0)
 
@@ -422,14 +403,14 @@ Para soporte técnico o reportar problemas, contacte al equipo de desarrollo.
 #### 📱 Archivos Nuevos/Modificados
 
 ```
-🆕 lib/services/background_sync_service.dart
+🆕 lib/services/auto_sync_service.dart
+🆕 lib/services/mongo_service.dart
 🆕 lib/widgets/sync_status_widget.dart
-🆕 lib/views/auto_sync_test_page.dart
 🆕 lib/utils/permission_helper.dart
 📝 lib/views/observationsFormPage.dart (actualizada)
 📝 lib/widgets/layout/enhanced_form_container.dart (con FAB)
-📝 android/app/src/main/AndroidManifest.CSV(permisos)
-📝 pubspec.yaml (nueva dependencia)
+📝 android/app/src/main/AndroidManifest.xml (permisos)
+📝 pubspec.yaml (nuevas dependencias)
 ```
 
 #### 🎯 Beneficios para el Usuario
@@ -437,7 +418,7 @@ Para soporte técnico o reportar problemas, contacte al equipo de desarrollo.
 - **Tranquilidad total**: Puede cerrar la app sin preocuparse por envíos pendientes
 - **Experiencia fluida**: No interrupciones por problemas de conectividad
 - **Feedback claro**: Siempre sabe el estado de sus formularios
-- **Confirmación automática**: Recibe email cuando se completa el envío
+- **Confirmación automática**: Notificación visual al completar el envío
 - **Modo offline completo**: Funciona perfectamente sin internet inicial
 
 ### 🔮 Próximas Características Planificadas
