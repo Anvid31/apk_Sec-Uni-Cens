@@ -16,6 +16,7 @@ class CoverageFormPage extends StatefulWidget {
 
 class _CoverageFormPageState extends State<CoverageFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   late CoverageInfo _coverageInfo;
   final _educationalLevelsController = TextEditingController();
   bool _showErrors = false;
@@ -51,6 +52,7 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
   @override
   void dispose() {
     _educationalLevelsController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -124,6 +126,7 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
       onNext: _submitForm,
       transitionType: FormTransitionType.slideScale,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -273,6 +276,7 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
         type: FormTransitionType.slideScale,
         stepNumber: 4,      );
     } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),

@@ -15,6 +15,7 @@ class ElectricityFormPage extends StatefulWidget {
 
 class _ElectricityFormPageState extends State<ElectricityFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   final _otherServiceController = TextEditingController();
   final _observationsController = TextEditingController();
   late ElectricityInfo _electricityInfo;
@@ -32,6 +33,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
   void dispose() {
     _otherServiceController.dispose();
     _observationsController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }  @override
   Widget build(BuildContext context) {
@@ -152,8 +154,11 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             type: FormTransitionType.slideScale,
             stepNumber: 6,
           );
+        } else {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
         }      },
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),

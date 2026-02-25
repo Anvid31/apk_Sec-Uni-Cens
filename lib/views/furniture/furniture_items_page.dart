@@ -19,14 +19,35 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
 
   // Dotación Cocina
   bool _tieneCocina = false;
-  final TextEditingController _necMobiliarioCocinaCtrl = TextEditingController();
-  final TextEditingController _necUtensiliosCocinaCtrl = TextEditingController();
+  final TextEditingController _necMobiliarioCocinaCtrl =
+      TextEditingController();
+  final TextEditingController _necUtensiliosCocinaCtrl =
+      TextEditingController();
 
   // Dotación Emergencia
   bool _necesitaBotiquin = false;
   final TextEditingController _necEmergenciaCtrl = TextEditingController();
 
   List<FurnitureItem> _filteredItems = [];
+  final Map<String, TextEditingController> _quantityControllers = {};
+
+  TextEditingController _getQtyCtrl(String key, int initialValue) {
+    return _quantityControllers.putIfAbsent(
+      key,
+      () => TextEditingController(text: '$initialValue'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _necMobiliarioCocinaCtrl.dispose();
+    _necUtensiliosCocinaCtrl.dispose();
+    _necEmergenciaCtrl.dispose();
+    for (final ctrl in _quantityControllers.values) {
+      ctrl.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -40,7 +61,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
     _tieneCocina = _surveyState.tieneCocina;
     _necMobiliarioCocinaCtrl.text = _surveyState.necesidadesMobiliarioCocina;
     _necUtensiliosCocinaCtrl.text = _surveyState.necesidadesUtensiliosCocina;
-    
+
     _necesitaBotiquin = _surveyState.necesitaBotiquin;
     _necEmergenciaCtrl.text = _surveyState.necesidadesEmergencia;
   }
@@ -50,10 +71,11 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
       if (query.isEmpty) {
         _filteredItems = _surveyState.items;
       } else {
-        _filteredItems = _surveyState.items.where((item) {
-          return item.name.toLowerCase().contains(query.toLowerCase()) ||
-                 item.code.toLowerCase().contains(query.toLowerCase());
-        }).toList();
+        _filteredItems =
+            _surveyState.items.where((item) {
+              return item.name.toLowerCase().contains(query.toLowerCase()) ||
+                  item.code.toLowerCase().contains(query.toLowerCase());
+            }).toList();
       }
     });
   }
@@ -64,7 +86,9 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Column(
             children: [
               Container(
@@ -73,10 +97,17 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                   color: Colors.green.shade50,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.check_circle_outline, size: 48, color: Colors.green.shade600),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 48,
+                  color: Colors.green.shade600,
+                ),
               ),
               const SizedBox(height: 16),
-              const Text('Confirmar Envío', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Confirmar Envío',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: const Text(
@@ -88,21 +119,40 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
             OutlinedButton(
               onPressed: () => Navigator.of(context).pop(false),
               style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 side: BorderSide(color: Colors.grey.shade300),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
-              child: Text('Cancelar', style: TextStyle(color: Colors.grey.shade700)),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 elevation: 0,
               ),
-              child: const Text('Enviar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Enviar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
@@ -124,18 +174,20 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
     try {
       await _surveyState.submit();
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Encuesta guardada y sincronizada correctamente')),
+        const SnackBar(
+          content: Text('Encuesta guardada y sincronizada correctamente'),
+        ),
       );
-      
+
       // Navigate back to home or selection page
       Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
     }
   }
 
@@ -188,30 +240,53 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
               const Expanded(
                 child: Text(
                   'Dotación Especial',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
+                  ),
                 ),
               ),
               TextButton.icon(
-                 onPressed: () async {
-                   final Uri url = Uri.parse('https://www.mineducacion.gov.co/1759/articles-355996_archivo_pdf_manual_dotaciones.pdf');
-                   if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                     if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir el manual')));
-                     }
-                   }
-                 },
-                 icon: const Icon(Icons.picture_as_pdf, color: Colors.indigo, size: 20),
-                 label: const Text('Ver Manual MEN', style: TextStyle(color: Colors.indigo)),
-               ),
+                onPressed: () async {
+                  final Uri url = Uri.parse(
+                    'https://www.mineducacion.gov.co/1759/articles-355996_archivo_pdf_manual_dotaciones.pdf',
+                  );
+                  if (!await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  )) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No se pudo abrir el manual'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(
+                  Icons.picture_as_pdf,
+                  color: Colors.indigo,
+                  size: 20,
+                ),
+                label: const Text(
+                  'Ver Manual MEN',
+                  style: TextStyle(color: Colors.indigo),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Cocina
           Card(
             elevation: 0,
             color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.indigo.shade100)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.indigo.shade100),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -219,50 +294,65 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       const Icon(Icons.restaurant, color: Colors.indigo),
-                       const SizedBox(width: 12),
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                              const Text('¿Cuenta la sede educativa con comedor-cocina?', style: TextStyle(fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 4),
-                              Text(
-                                '¿Qué elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN?',
-                                style: TextStyle(fontSize: 12, color: Colors.indigo.shade800, fontStyle: FontStyle.italic),
-                              ),
-                           ],
-                         )
-                       ),
-                       Switch(
-                         value: _tieneCocina,
-                         onChanged: (val) => setState(() => _tieneCocina = val),
-                         activeColor: Colors.indigo,
-                       ),
+                      const Icon(Icons.restaurant, color: Colors.indigo),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '¿Cuenta la sede educativa con comedor-cocina?',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            SizedBox(height: 4),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _tieneCocina,
+                        onChanged: (val) => setState(() => _tieneCocina = val),
+                        activeColor: Colors.indigo,
+                      ),
                     ],
                   ),
                   if (_tieneCocina) ...[
                     const SizedBox(height: 16),
+                    Text(
+                      'Ej: 1 mesón con azafates, 3 mesones de trabajo cocina, 2 mesas de cafetería plegable, 1 estufa enana de un quemador, estufa lineal de tres quemadores, etc.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.indigo.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _necMobiliarioCocinaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Mobiliario de Cocina',
-                        hintText: ' 1 mesón con azafates,  3 mesones de trabajo cocina,  2 mesas de cafeteria plegable, 1 estufa enana de un quemador, estufa lineal de tres quemadores, etc',
-                        helperMaxLines: 3,
+                        hintText: 'Indique cantidades y elementos requeridos',
                         border: OutlineInputBorder(),
                         isDense: true,
                         filled: true,
-                         fillColor: Colors.white,
+                        fillColor: Colors.white,
                       ),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
+                    Text(
+                      'Ej: 1 nevera, 2 congeladores, 1 licuadora, 1 recipiente plástico, etc.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.indigo.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _necUtensiliosCocinaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Menaje, Equipo y Utensilios de Cocina',
-                        hintText: '1 Nevera, 2 congeladores, 1 licuadora, 1 recipiente plastico, etc',
-                        helperMaxLines: 3,
+                        hintText: 'Indique cantidades y elementos requeridos',
                         border: OutlineInputBorder(),
                         isDense: true,
                         filled: true,
@@ -275,14 +365,17 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
 
           // Botiquín / Emergencia
           Card(
             elevation: 0,
             color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.indigo.shade100)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.indigo.shade100),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -290,40 +383,48 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       const Icon(Icons.medical_services, color: Colors.indigo),
-                       const SizedBox(width: 12),
-                       Expanded(
-                         child: Column(
+                      const Icon(Icons.medical_services, color: Colors.indigo),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             const Text('¿Considera necesario la dotación de Mobiliario para la Atención de Emergencias?', style: TextStyle(fontWeight: FontWeight.w600)),
-                             const SizedBox(height: 4),
-                             Text(
-                               '¿Qué elementos y cantidades se requieren teniendo en cuenta el manual de dotación escolar MEN?',
-                               style: TextStyle(fontSize: 12, color: Colors.indigo.shade800, fontStyle: FontStyle.italic),
-                             ),
-                           ],
-                         )
-                       ),
-                       Switch(
-                         value: _necesitaBotiquin,
-                         onChanged: (val) => setState(() => _necesitaBotiquin = val),
-                         activeColor: Colors.indigo,
-                       ),
+                          children: [
+                            Text(
+                              '¿Considera necesario la dotación de Mobiliario para la Atención de Emergencias?',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            SizedBox(height: 4),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _necesitaBotiquin,
+                        onChanged:
+                            (val) => setState(() => _necesitaBotiquin = val),
+                        activeColor: Colors.indigo,
+                      ),
                     ],
                   ),
                   if (_necesitaBotiquin) ...[
-                     const SizedBox(height: 16),
-                     TextFormField(
+                    const SizedBox(height: 16),
+                    Text(
+                      'Ej: 1 camilla, 2 botiquines gabinete fijo, 6 canecas riesgo biológico, 3 contenedores de punzantes, báscula con tallímetro, etc.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.indigo.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
                       controller: _necEmergenciaCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Mobiliario para la Atención de Emergencias',
-                        hintText: '1 Camilla, 2 botiquines gavinete fijo, 6 canecas riesgo biologico, 3 contenedores de punzantes, báscula con tallimetro, etc',
-                        helperMaxLines: 3,
+                        hintText: 'Indique cantidades y elementos requeridos',
                         border: OutlineInputBorder(),
                         isDense: true,
                         filled: true,
-                         fillColor: Colors.white,
+                        fillColor: Colors.white,
                       ),
                       maxLines: 3,
                     ),
@@ -370,7 +471,10 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             item.description,
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                     ],
@@ -378,51 +482,83 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                 ),
                 // Si NO tiene subitems, mostramos el control de cantidad aquí arriba
                 if (!hasSubItems) ...[
-                 const SizedBox(width: 8),
-                 Container(
+                  const SizedBox(width: 8),
+                  Container(
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
-                   child: Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         RepeatingIconButton(
                           icon: const Icon(Icons.remove, size: 20),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                          onPressed: item.quantity > 0 ? () {
-                            setState(() => item.quantity--);
-                          } : null,
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
+                          onPressed:
+                              item.quantity > 0
+                                  ? () {
+                                    setState(() {
+                                      item.quantity--;
+                                      _quantityControllers[item.code]?.text =
+                                          '${item.quantity}';
+                                    });
+                                  }
+                                  : null,
                         ),
-                        Container(
-                          constraints: const BoxConstraints(minWidth: 24),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${item.quantity}',
+                        SizedBox(
+                          width: 48,
+                          child: TextField(
+                            controller: _getQtyCtrl(item.code, item.quantity),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16, 
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: item.quantity > 0 ? Colors.blue.shade700 : Colors.black54,
+                              color:
+                                  item.quantity > 0
+                                      ? Colors.blue.shade700
+                                      : Colors.black54,
                             ),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: (val) {
+                              final parsed = int.tryParse(val);
+                              if (parsed != null && parsed >= 0) {
+                                setState(() => item.quantity = parsed);
+                              }
+                            },
                           ),
                         ),
                         RepeatingIconButton(
                           icon: const Icon(Icons.add, size: 20),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
                           onPressed: () {
-                            setState(() => item.quantity++);
+                            setState(() {
+                              item.quantity++;
+                              _quantityControllers[item.code]?.text =
+                                  '${item.quantity}';
+                            });
                           },
                         ),
                       ],
                     ),
-                 ),
+                  ),
                 ],
               ],
             ),
-            
+
             const SizedBox(height: 16),
 
             // SUBITEMS (si tiene)
@@ -431,79 +567,170 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
-                   border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Column(
-                  children: item.subItems!.map((sub) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(sub.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
-                        
-                        // Control cantidad subitem compacto
-                         Container(
-                           decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                           ),
-                           height: 36,
-                           child: Row(
-                             mainAxisSize: MainAxisSize.min,
-                             children: [
-                               RepeatingIconButton(
-                                 icon: const Icon(Icons.remove, size: 16),
-                                 padding: EdgeInsets.zero,
-                                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                 onPressed: sub.quantity > 0 ? () {
-                                    setState(() {
-                                      sub.quantity--;
-                                      item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
-                                    });
-                                 } : null,
-                               ),
-                               Padding(
-                                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                                 child: Text('${sub.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                               ),
-                               RepeatingIconButton(
-                                 icon: const Icon(Icons.add, size: 16),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  onPressed: () {
-                                    setState(() {
-                                      sub.quantity++;
-                                      item.quantity = item.subItems!.fold(0, (sum, e) => sum + e.quantity);
-                                    });
-                                 },
-                               ),
-                             ],
-                           ),
-                         )
-                      ],
-                    ),
-                  )).toList(),
+                  children:
+                      item.subItems!
+                          .map(
+                            (sub) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      sub.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Control cantidad subitem compacto
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    height: 36,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        RepeatingIconButton(
+                                          icon: const Icon(
+                                            Icons.remove,
+                                            size: 16,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 32,
+                                            minHeight: 32,
+                                          ),
+                                          onPressed:
+                                              sub.quantity > 0
+                                                  ? () {
+                                                    setState(() {
+                                                      sub.quantity--;
+                                                      item.quantity = item
+                                                          .subItems!
+                                                          .fold(
+                                                            0,
+                                                            (sum, e) =>
+                                                                sum +
+                                                                e.quantity,
+                                                          );
+                                                      _quantityControllers['${item.code}_${sub.name}']
+                                                              ?.text =
+                                                          '${sub.quantity}';
+                                                    });
+                                                  }
+                                                  : null,
+                                        ),
+                                        SizedBox(
+                                          width: 44,
+                                          child: TextField(
+                                            controller: _getQtyCtrl(
+                                              '${item.code}_${sub.name}',
+                                              sub.quantity,
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                            onChanged: (val) {
+                                              final parsed = int.tryParse(val);
+                                              if (parsed != null &&
+                                                  parsed >= 0) {
+                                                setState(() {
+                                                  sub.quantity = parsed;
+                                                  item.quantity = item.subItems!
+                                                      .fold(
+                                                        0,
+                                                        (sum, e) =>
+                                                            sum + e.quantity,
+                                                      );
+                                                });
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        RepeatingIconButton(
+                                          icon: const Icon(Icons.add, size: 16),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 32,
+                                            minHeight: 32,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              sub.quantity++;
+                                              item.quantity = item.subItems!
+                                                  .fold(
+                                                    0,
+                                                    (sum, e) =>
+                                                        sum + e.quantity,
+                                                  );
+                                              _quantityControllers['${item.code}_${sub.name}']
+                                                  ?.text = '${sub.quantity}';
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
               // Total visual para subitems
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                 child: Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const Text('Total Calculado: ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const Text(
+                      'Total Calculado: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                     Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade100),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade100),
+                      ),
+                      child: Text(
+                        '${item.quantity}',
+                        style: TextStyle(
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                        child: Text('${item.quantity}', style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.bold, fontSize: 16)),
-                     ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -516,8 +743,13 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                 labelText: 'Observaciones',
                 hintText: 'Ingrese las observaciones necesarias...',
                 floatingLabelBehavior: FloatingLabelBehavior.auto,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 isDense: true,
               ),
               maxLines: 2,

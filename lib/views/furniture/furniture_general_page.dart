@@ -18,36 +18,67 @@ class FurnitureGeneralPage extends StatefulWidget {
 
 class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   late FurnitureSurveyState _surveyState;
-  
+
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _municipalityController = TextEditingController();
-  final TextEditingController _corregimientoController = TextEditingController();
+  final TextEditingController _corregimientoController =
+      TextEditingController();
   final TextEditingController _veredaController = TextEditingController();
-  
-  final TextEditingController _intervieweeNameController = TextEditingController();
-  final TextEditingController _intervieweePositionController = TextEditingController();
-  final TextEditingController _intervieweeContactController = TextEditingController();
-  
-  final TextEditingController _mainInstitutionNameController = TextEditingController();
-  final TextEditingController _institutionNameController = TextEditingController();
-  final TextEditingController _principalNameController = TextEditingController();
-  final TextEditingController _principalContactController = TextEditingController();
-  final TextEditingController _principalEmailController = TextEditingController();
+
+  final TextEditingController _intervieweeNameController =
+      TextEditingController();
+  final TextEditingController _intervieweePositionController =
+      TextEditingController();
+  final TextEditingController _intervieweeContactController =
+      TextEditingController();
+
+  final TextEditingController _mainInstitutionNameController =
+      TextEditingController();
+  final TextEditingController _institutionNameController =
+      TextEditingController();
+  final TextEditingController _principalNameController =
+      TextEditingController();
+  final TextEditingController _principalContactController =
+      TextEditingController();
+  final TextEditingController _principalEmailController =
+      TextEditingController();
   final TextEditingController _daneController = TextEditingController();
-  
+
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
-  final TextEditingController _accessObservationsController = TextEditingController();
-  final TextEditingController _closureRiskReasonController = TextEditingController();
+  final TextEditingController _accessObservationsController =
+      TextEditingController();
+  final TextEditingController _closureRiskReasonController =
+      TextEditingController();
+
+  // Keys para hacer scroll al primer campo inválido
+  final _departmentKey = GlobalKey();
+  final _municipalityKey = GlobalKey();
+  final _zoneKey = GlobalKey();
+  final _intervieweeNameKey = GlobalKey();
+  final _intervieweePositionKey = GlobalKey();
+  final _intervieweeContactKey = GlobalKey();
+  final _mainInstitutionKey = GlobalKey();
+  final _institutionNameKey = GlobalKey();
+  final _closureReasonKey = GlobalKey();
+  final _principalNameKey = GlobalKey();
+  final _principalContactKey = GlobalKey();
+  final _accessTypeKey = GlobalKey();
+  final _accessObsKey = GlobalKey();
 
   List<String> _municipalities = [];
   String? _selectedZone;
   String? _selectedAccessType;
   bool _riskOfClosure = false;
-  
-  final List<String> _accessTypeOptions = ['Vehicular (Carretera)', 'Fluvial (Rio)', 'Camino Herradura (Trocha)'];
+
+  final List<String> _accessTypeOptions = [
+    'Vehicular (Carretera)',
+    'Fluvial (Rio)',
+    'Camino Herradura (Trocha)',
+  ];
   final List<String> _zoneOptions = ['Urbano', 'Rural'];
 
   // Listas filtradas para Mobiliario
@@ -63,6 +94,7 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
       'Convención',
       'El Carmen',
       'El Tarra',
+      'Cúcuta',
       'El Zulia',
       'Hacarí',
       'La Playa',
@@ -72,14 +104,8 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
       'Teorama',
       'Tibú',
     ],
-    'Bolívar': [
-      'Morales',
-    ],
-    'Cesar': [
-      'Aguachica',
-      'La Gloria',
-      'Pelaya',
-    ],
+    'Bolívar': ['Morales'],
+    'Cesar': ['Aguachica', 'La Gloria', 'Pelaya'],
   };
 
   @override
@@ -89,34 +115,42 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
     _loadData();
     _dateController.text = DateTime.now().toString().split(' ')[0];
   }
-  
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _loadData() {
     _departmentController.text = _surveyState.departamento;
     _municipalityController.text = _surveyState.municipio;
     _selectedZone = _surveyState.zona;
     _corregimientoController.text = _surveyState.corregimiento;
     _veredaController.text = _surveyState.vereda;
-    
+
     _intervieweeNameController.text = _surveyState.nombreEntrevistado;
     _intervieweePositionController.text = _surveyState.cargoEntrevistado;
     _intervieweeContactController.text = _surveyState.contactoEntrevistado;
-    
-    _mainInstitutionNameController.text = _surveyState.nombreInstitucionPrincipal;
+
+    _mainInstitutionNameController.text =
+        _surveyState.nombreInstitucionPrincipal;
     _institutionNameController.text = _surveyState.nombreSedeEducativa;
     _principalNameController.text = _surveyState.nombreRector;
     _principalContactController.text = _surveyState.contactoRector;
     _principalEmailController.text = _surveyState.emailRector;
-    
+
     _latitudeController.text = _surveyState.latitud;
     _longitudeController.text = _surveyState.longitud;
     _selectedAccessType = _surveyState.tipoAcceso;
     _accessObservationsController.text = _surveyState.observacionesAcceso;
-    
+
     _riskOfClosure = _surveyState.riesgoCierre;
     _closureRiskReasonController.text = _surveyState.motivoCierre;
-    
+
     if (_departmentController.text.isNotEmpty) {
-      _municipalities = _allowedMunicipalities[_departmentController.text] ?? [];
+      _municipalities =
+          _allowedMunicipalities[_departmentController.text] ?? [];
     }
   }
 
@@ -124,7 +158,8 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
     if (department == null) return;
     setState(() {
       _municipalities = _allowedMunicipalities[department] ?? [];
-      if (_municipalityController.text.isNotEmpty && !_municipalities.contains(_municipalityController.text)) {
+      if (_municipalityController.text.isNotEmpty &&
+          !_municipalities.contains(_municipalityController.text)) {
         _municipalityController.clear();
       }
     });
@@ -161,12 +196,60 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
         stepNumber: 2,
       );
     } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToFirstError();
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor diligencie todos los campos obligatorios'),
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  void _scrollToFirstError() {
+    final checks = <MapEntry<GlobalKey, bool>>[
+      MapEntry(_departmentKey, _departmentController.text.isEmpty),
+      MapEntry(_municipalityKey, _municipalityController.text.isEmpty),
+      MapEntry(_zoneKey, _selectedZone == null || _selectedZone!.isEmpty),
+      MapEntry(_intervieweeNameKey, _intervieweeNameController.text.isEmpty),
+      MapEntry(
+        _intervieweePositionKey,
+        _intervieweePositionController.text.isEmpty,
+      ),
+      MapEntry(
+        _intervieweeContactKey,
+        _intervieweeContactController.text.isEmpty,
+      ),
+      MapEntry(
+        _mainInstitutionKey,
+        _mainInstitutionNameController.text.isEmpty,
+      ),
+      MapEntry(_institutionNameKey, _institutionNameController.text.isEmpty),
+      if (_riskOfClosure)
+        MapEntry(_closureReasonKey, _closureRiskReasonController.text.isEmpty),
+      MapEntry(_principalNameKey, _principalNameController.text.isEmpty),
+      MapEntry(_principalContactKey, _principalContactController.text.isEmpty),
+      MapEntry(
+        _accessTypeKey,
+        _selectedAccessType == null || _selectedAccessType!.isEmpty,
+      ),
+      MapEntry(_accessObsKey, _accessObservationsController.text.isEmpty),
+    ];
+    for (final entry in checks) {
+      if (entry.value) {
+        final ctx = entry.key.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+            alignment: 0.15,
+          );
+        }
+        break;
+      }
     }
   }
 
@@ -192,12 +275,13 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
       onPrevious: () => Navigator.of(context).pop(),
       onNext: _onNext,
       child: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-               // Fecha
+              // Fecha
               TextFormField(
                 controller: _dateController,
                 enabled: false,
@@ -208,11 +292,15 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // Ubicación
               LocationDropdown(
+                key: _departmentKey,
                 label: 'Departamento',
-                value: _departmentController.text.isNotEmpty ? _departmentController.text : null,
+                value:
+                    _departmentController.text.isNotEmpty
+                        ? _departmentController.text
+                        : null,
                 placeholder: 'Seleccionar departamento',
                 items: _allowedDepartments,
                 prefixIcon: Icons.location_on_outlined,
@@ -222,46 +310,63 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                     _updateMunicipalities(newValue);
                   });
                 },
-                validator: (value) => value == null ? 'Seleccione un departamento' : null,
+                validator:
+                    (value) =>
+                        value == null ? 'Seleccione un departamento' : null,
               ),
               const SizedBox(height: 12),
               LocationDropdown(
+                key: _municipalityKey,
                 label: 'Municipio',
-                value: _municipalityController.text.isNotEmpty ? _municipalityController.text : null,
+                value:
+                    _municipalityController.text.isNotEmpty
+                        ? _municipalityController.text
+                        : null,
                 placeholder: 'Seleccionar municipio',
                 items: _municipalities,
                 prefixIcon: Icons.location_city_outlined,
                 enabled: _departmentController.text.isNotEmpty,
-                parentSelection: _departmentController.text.isNotEmpty ? _departmentController.text : null,
+                parentSelection:
+                    _departmentController.text.isNotEmpty
+                        ? _departmentController.text
+                        : null,
                 onChanged: (String? newValue) {
                   setState(() {
                     _municipalityController.text = newValue ?? '';
                   });
                 },
-                validator: (value) => value == null ? 'Seleccione un municipio' : null,
+                validator:
+                    (value) => value == null ? 'Seleccione un municipio' : null,
               ),
               const SizedBox(height: 12),
-              
+
               // Zona y Corregimiento
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                      key: _zoneKey,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
                       decoration: InputDecoration(
                         label: _requiredLabel('Zona'),
                         border: const OutlineInputBorder(),
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 12,
+                        ),
                       ),
                       value: _selectedZone,
-                      items: _zoneOptions.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                      items:
+                          _zoneOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
                       onChanged: (newValue) {
                         setState(() {
                           _selectedZone = newValue;
@@ -283,7 +388,7 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Vereda
               TextFormField(
                 controller: _veredaController,
@@ -295,12 +400,17 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
               ),
 
               const Divider(height: 32),
-              const Text('Datos del Entrevistado', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Datos del Entrevistado',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
 
               TextFormField(
+                key: _intervieweeNameKey,
                 controller: _intervieweeNameController,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 decoration: InputDecoration(
                   label: _requiredLabel('Nombre Entrevistado/a'),
                   border: const OutlineInputBorder(),
@@ -312,8 +422,11 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                 children: [
                   Expanded(
                     child: TextFormField(
+                      key: _intervieweePositionKey,
                       controller: _intervieweePositionController,
-                      validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
                       decoration: InputDecoration(
                         label: _requiredLabel('Cargo'),
                         border: const OutlineInputBorder(),
@@ -324,8 +437,11 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextFormField(
+                      key: _intervieweeContactKey,
                       controller: _intervieweeContactController,
-                      validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         label: _requiredLabel('Contacto'),
@@ -339,28 +455,36 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
               ),
 
               const Divider(height: 32),
-              const Text('Institución Educativa', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Institución Educativa',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
 
               CustomTextField(
+                key: _mainInstitutionKey,
                 controller: _mainInstitutionNameController,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 label: 'Nombre I.E. Principal',
                 prefixIcon: Icons.account_balance,
               ),
               const SizedBox(height: 12),
               CustomTextField(
+                key: _institutionNameKey,
                 controller: _institutionNameController,
                 label: 'Nombre Sede Educativa',
                 prefixIcon: Icons.school,
                 validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
               ),
               const SizedBox(height: 12),
-              
+
               Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('¿Riesgo de Cierre de la Sede Educativa?'),
+                    title: const Text(
+                      '¿Riesgo de Cierre de la Sede Educativa?',
+                    ),
                     value: _riskOfClosure,
                     onChanged: (val) => setState(() => _riskOfClosure = val),
                     contentPadding: EdgeInsets.zero,
@@ -368,8 +492,13 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                   if (_riskOfClosure) ...[
                     const SizedBox(height: 8),
                     TextFormField(
+                      key: _closureReasonKey,
                       controller: _closureRiskReasonController,
-                      validator: (v) => _riskOfClosure && (v == null || v.isEmpty) ? 'Requerido' : null,
+                      validator:
+                          (v) =>
+                              _riskOfClosure && (v == null || v.isEmpty)
+                                  ? 'Requerido'
+                                  : null,
                       decoration: InputDecoration(
                         label: _requiredLabel('¿Por qué?'),
                         border: const OutlineInputBorder(),
@@ -379,13 +508,18 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                   ],
                 ],
               ),
-              
+
               const Divider(height: 32),
-              const Text('Datos del Rector', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Datos del Rector',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               TextFormField(
+                key: _principalNameKey,
                 controller: _principalNameController,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 decoration: InputDecoration(
                   label: _requiredLabel('Nombre Rector'),
                   border: const OutlineInputBorder(),
@@ -397,8 +531,11 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                 children: [
                   Expanded(
                     child: TextFormField(
+                      key: _principalContactKey,
                       controller: _principalContactController,
-                      validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                      validator:
+                          (v) =>
+                              v == null || v.isEmpty ? 'Campo requerido' : null,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         label: _requiredLabel('Contacto Rector'),
@@ -423,15 +560,20 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                   ),
                 ],
               ),
-              
+
               const Divider(height: 32),
-              const Text('Ubicación y Acceso', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Ubicación y Acceso',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               LocationField(
                 label: 'Ubicación Geográfica',
-                initialValue: _latitudeController.text.isNotEmpty && _longitudeController.text.isNotEmpty 
-                    ? '${_latitudeController.text}, ${_longitudeController.text}' 
-                    : null,
+                initialValue:
+                    _latitudeController.text.isNotEmpty &&
+                            _longitudeController.text.isNotEmpty
+                        ? '${_latitudeController.text}, ${_longitudeController.text}'
+                        : null,
                 onChanged: (value) {
                   final parts = value.split(',');
                   if (parts.length >= 2) {
@@ -442,19 +584,22 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                key: _accessTypeKey,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 decoration: InputDecoration(
                   label: _requiredLabel('Tipo de Acceso Principal'),
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.directions_car),
                 ),
                 value: _selectedAccessType,
-                items: _accessTypeOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                items:
+                    _accessTypeOptions.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                 onChanged: (newValue) {
                   setState(() {
                     _selectedAccessType = newValue;
@@ -463,9 +608,11 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                key: _accessObsKey,
                 controller: _accessObservationsController,
                 maxLines: 2,
-                validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
+                validator:
+                    (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
                 decoration: InputDecoration(
                   label: _requiredLabel('Observaciones de Como llegar'),
                   border: const OutlineInputBorder(),

@@ -16,12 +16,19 @@ class AppliancesFormPage extends StatefulWidget {
 class _AppliancesFormPageState extends State<AppliancesFormPage> {
   late AppliancesInfo _appliancesInfo;
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     final surveyState = Provider.of<SurveyState>(context, listen: false);
     _appliancesInfo = surveyState.appliancesInfo;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Widget _buildApplianceItem(ApplianceItem appliance) {
@@ -502,6 +509,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
       showPrevious: true,
       transitionType: FormTransitionType.slideScale,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -745,6 +753,8 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
         type: FormTransitionType.slideScale,
         stepNumber: 7,
       );
+    } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     }
   }
 }

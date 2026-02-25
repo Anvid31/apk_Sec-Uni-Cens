@@ -18,6 +18,7 @@ class ObservationsFormPage extends StatefulWidget {
 
 class _ObservationsFormPageState extends State<ObservationsFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   late ObservationsInfo _observationsInfo;
 
   @override
@@ -25,6 +26,12 @@ class _ObservationsFormPageState extends State<ObservationsFormPage> {
     super.initState();
     final surveyState = Provider.of<SurveyState>(context, listen: false);
     _observationsInfo = surveyState.observationsInfo;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Widget _buildSubmissionStatusCard(SurveyState surveyState) {
@@ -164,6 +171,7 @@ class _ObservationsFormPageState extends State<ObservationsFormPage> {
           showPrevious: true,
           transitionType: FormTransitionType.slideScale,
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const ClampingScrollPhysics(),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -316,6 +324,8 @@ class _ObservationsFormPageState extends State<ObservationsFormPage> {
       
       // Mostrar diálogo simple de confirmación y activar sincronización
       _showFinalSubmissionDialog(surveyState);
+    } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     }
   }
 

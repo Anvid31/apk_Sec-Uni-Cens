@@ -15,31 +15,46 @@ class FurnitureCoveragePage extends StatefulWidget {
 
 class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   late FurnitureSurveyState _surveyState;
 
   final TextEditingController _numAlumnosController = TextEditingController();
   final TextEditingController _numMujeresController = TextEditingController();
   final TextEditingController _numHombresController = TextEditingController();
   final TextEditingController _numDocentesController = TextEditingController();
-  final TextEditingController _aniosFuncionamientoController = TextEditingController();
-  final TextEditingController _technicalModalityController = TextEditingController();
-  
+  final TextEditingController _aniosFuncionamientoController =
+      TextEditingController();
+  final TextEditingController _technicalModalityController =
+      TextEditingController();
+
+  // Keys para scroll al primer campo inválido
+  final _mujeresKey = GlobalKey();
+  final _hombresKey = GlobalKey();
+  final _docentesKey = GlobalKey();
+  final _aniosKey = GlobalKey();
+  final _jornadaKey = GlobalKey();
+
   final List<String> _availableLevels = [
     'Preescolar',
     'Primaria',
     'Secundaria',
   ];
   final List<String> _selectedLevels = [];
-  
+
   String? _selectedJornada;
-  final List<String> _jornadaOptions = ['Única', 'Tarde', 'Mañana', 'Mañana y Tarde'];
+  final List<String> _jornadaOptions = [
+    'Única',
+    'Tarde',
+    'Mañana',
+    'Mañana y Tarde',
+  ];
 
   @override
   void initState() {
     super.initState();
     _surveyState = Provider.of<FurnitureSurveyState>(context, listen: false);
     _loadData();
-    
+
     // Escuchar cambios para calcular total
     _numMujeresController.addListener(_updateTotal);
     _numHombresController.addListener(_updateTotal);
@@ -61,6 +76,7 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
     _numDocentesController.dispose();
     _aniosFuncionamientoController.dispose();
     _technicalModalityController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -70,7 +86,7 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
     _numHombresController.text = _surveyState.numHombres;
     _numDocentesController.text = _surveyState.numDocentes;
     _aniosFuncionamientoController.text = _surveyState.aniosFuncionamiento;
-    
+
     if (_surveyState.nivelesEducativos != null) {
       _selectedLevels.addAll(_surveyState.nivelesEducativos!);
     }
@@ -81,11 +97,13 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
     if (_formKey.currentState!.validate()) {
       if (_selectedLevels.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Debe seleccionar al menos un nivel educativo')),
+          const SnackBar(
+            content: Text('Debe seleccionar al menos un nivel educativo'),
+          ),
         );
         return;
       }
-      
+
       _surveyState.updateCoverage(
         numAlumnos: _numAlumnosController.text,
         numMujeres: _numMujeresController.text,
@@ -102,134 +120,180 @@ class _FurnitureCoveragePageState extends State<FurnitureCoveragePage> {
         stepNumber: 3,
       );
     } else {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToFirstError(),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor diligencie todos los campos obligatorios'),
-           backgroundColor: Colors.red,
+          backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  void _scrollToFirstError() {
+    final checks = <MapEntry<GlobalKey, bool>>[
+      MapEntry(_mujeresKey, _numMujeresController.text.isEmpty),
+      MapEntry(_hombresKey, _numHombresController.text.isEmpty),
+      MapEntry(_docentesKey, _numDocentesController.text.isEmpty),
+      MapEntry(_aniosKey, _aniosFuncionamientoController.text.isEmpty),
+      MapEntry(_jornadaKey, _selectedJornada == null),
+    ];
+    for (final entry in checks) {
+      if (entry.value) {
+        final ctx = entry.key.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOut,
+            alignment: 0.15,
+          );
+        }
+        break;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return EnhancedFormContainer(
-        title: 'Cobertura',
-        subtitle: 'Información Estudiantil y Docente',
-        currentStep: 2,
-        totalSteps: 5,
-        showPrevious: true,
-        onPrevious: () => FormNavigator.popForm(context),
-        onNext: _onNext,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      title: 'Cobertura',
+      subtitle: 'Información Estudiantil y Docente',
+      currentStep: 2,
+      totalSteps: 5,
+      showPrevious: true,
+      onPrevious: () => FormNavigator.popForm(context),
+      onNext: _onNext,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomNumberField(
+                      key: _mujeresKey,
+                      controller: _numMujeresController,
+                      label: 'Cant. Mujeres',
+                      icon: Icons.female,
+                      isRequired: true,
+                      validator:
+                          (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                      onChanged: (_) {}, // Trigger listener
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: CustomNumberField(
+                      key: _hombresKey,
+                      controller: _numHombresController,
+                      label: 'Cant. Hombres',
+                      icon: Icons.male,
+                      isRequired: true,
+                      validator:
+                          (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                      onChanged: (_) {}, // Trigger listener
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              CustomNumberField(
+                controller: _numAlumnosController,
+                label: 'Número total de alumnos matriculados',
+                icon: Icons.groups,
+                readOnly: true,
+                isRequired: true,
+                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              CustomNumberField(
+                key: _docentesKey,
+                controller: _numDocentesController,
+                label: 'Número de docentes asignados',
+                icon: Icons.person_pin,
+                isRequired: true,
+                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              CustomNumberField(
+                key: _aniosKey,
+                controller: _aniosFuncionamientoController,
+                label: 'Años de funcionamiento de la sede',
+                icon: Icons.history,
+                isRequired: true,
+                validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+              ),
+
+              const SizedBox(height: 24),
+              const Text.rich(
+                TextSpan(
+                  text: 'Niveles educativos',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                   children: [
-                    Expanded(
-                      child: CustomNumberField(
-                        controller: _numMujeresController,
-                        label: 'Cant. Mujeres',
-                        icon: Icons.female,
-                        isRequired: true,
-                        validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                        onChanged: (_) {}, // Trigger listener
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomNumberField(
-                        controller: _numHombresController,
-                        label: 'Cant. Hombres',
-                        icon: Icons.male,
-                        isRequired: true,
-                        validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                        onChanged: (_) {}, // Trigger listener
-                      ),
-                    ),
+                    TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
                   ],
                 ),
-                const SizedBox(height: 12),
-                CustomNumberField(
-                  controller: _numAlumnosController,
-                  label: 'Número total de alumnos matriculados',
-                  icon: Icons.groups,
-                  readOnly: true,
-                  isRequired: true,
-                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 12),
-                CustomNumberField(
-                  controller: _numDocentesController,
-                  label: 'Número de docentes asignados',
-                  icon: Icons.person_pin,
-                  isRequired: true,
-                   validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 12),
-                CustomNumberField(
-                  controller: _aniosFuncionamientoController,
-                  label: 'Años de funcionamiento de la sede',
-                  icon: Icons.history,
-                  isRequired: true,
-                  validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
-                ),
-                
-                const SizedBox(height: 24),
-                const Text.rich(
-                  TextSpan(
-                    text: 'Niveles educativos',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                    children: [
-                      TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-                ..._availableLevels.map((level) {
-                  return CheckboxListTile(
-                    title: Text(level),
-                    value: _selectedLevels.contains(level),
-                    onChanged: (bool? selected) {
-                      setState(() {
-                        if (selected ?? false) {
-                          _selectedLevels.add(level);
-                        } else {
-                          _selectedLevels.remove(level);
-                        }
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
-                  );
-                }),
+              ),
+              ..._availableLevels.map((level) {
+                return CheckboxListTile(
+                  title: Text(level),
+                  value: _selectedLevels.contains(level),
+                  onChanged: (bool? selected) {
+                    setState(() {
+                      if (selected ?? false) {
+                        _selectedLevels.add(level);
+                      } else {
+                        _selectedLevels.remove(level);
+                      }
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                );
+              }),
 
-                const SizedBox(height: 24),
-                const Text.rich(
-                  TextSpan(
-                    text: 'Jornada',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                    children: [
-                      TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
-                    ],
+              const SizedBox(height: 24),
+              const Text.rich(
+                TextSpan(
+                  text: 'Jornada',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
+                  children: [
+                    TextSpan(text: ' *', style: TextStyle(color: Colors.red)),
+                  ],
                 ),
-                DropdownButtonFormField<String>(
-                  value: _selectedJornada,
-                  items: _jornadaOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (val) => setState(() => _selectedJornada = val),
-                  validator: (v) => v == null ? 'Seleccione una jornada' : null,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Seleccione la jornada',
-                  ),
+              ),
+              DropdownButtonFormField<String>(
+                key: _jornadaKey,
+                value: _selectedJornada,
+                items:
+                    _jornadaOptions
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                onChanged: (val) => setState(() => _selectedJornada = val),
+                validator: (v) => v == null ? 'Seleccione una jornada' : null,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Seleccione la jornada',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        )
+        ),
+      ),
     );
   }
 }

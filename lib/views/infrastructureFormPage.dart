@@ -17,6 +17,7 @@ class InfrastructureFormPage extends StatefulWidget {
 
 class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   InfrastructureInfo infrastructureInfo = InfrastructureInfo();
   final TextEditingController _proyectosController = TextEditingController();
   final TextEditingController _otrosEspaciosController = TextEditingController();
@@ -280,6 +281,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           );
         }
       }
+    } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     }
   }
 
@@ -318,6 +321,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       onNext: _saveData,
       transitionType: FormTransitionType.slideScale,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -327,7 +331,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                 ? AutovalidateMode.always 
                 : AutovalidateMode.disabled,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,              children: [                
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 // Header con descripción dentro de Stack para botón flotante
                 Stack(
                   children: [
@@ -1282,6 +1287,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     _proyectosController.dispose();
     _otrosEspaciosController.dispose();
     _otroPredioController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }

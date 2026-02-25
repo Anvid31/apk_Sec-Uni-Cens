@@ -16,6 +16,7 @@ class InstitutionalFormPage extends StatefulWidget {
 
 class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   late InstitutionalInfo _institutionalInfo;
   bool _showErrors = false;
   
@@ -82,6 +83,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     _principalNameController.dispose();
     _contactController.dispose();
     _emailController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }  @override
   Widget build(BuildContext context) {
@@ -93,6 +95,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
       onNext: _submitForm,
       transitionType: FormTransitionType.slideScale,
       child: SingleChildScrollView(
+        controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -291,6 +294,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
         stepNumber: 3,
       );
     } else {
+      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),
