@@ -20,15 +20,16 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
   final ScrollController _scrollController = ScrollController();
   InfrastructureInfo infrastructureInfo = InfrastructureInfo();
   final TextEditingController _proyectosController = TextEditingController();
-  final TextEditingController _otrosEspaciosController = TextEditingController();
+  final TextEditingController _otrosEspaciosController =
+      TextEditingController();
   final TextEditingController _otroPredioController = TextEditingController();
   bool _showErrors = false;
-  
+
   @override
   void initState() {
     super.initState();
     _loadData();
-    
+
     // Agregar listeners para auto-guardado cuando cambie el texto
     _proyectosController.addListener(_autoSaveData);
     _otrosEspaciosController.addListener(_autoSaveData);
@@ -41,19 +42,27 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       if (savedData != null) {
         setState(() {
           infrastructureInfo = savedData;
-          _proyectosController.text = infrastructureInfo.proyectosInfraestructura;
-          _otrosEspaciosController.text = infrastructureInfo.descripcionOtrosEspacios;
+          _proyectosController.text =
+              infrastructureInfo.proyectosInfraestructura;
+          _otrosEspaciosController.text =
+              infrastructureInfo.descripcionOtrosEspacios;
           _otroPredioController.text = infrastructureInfo.descripcionOtroPredio;
         });
         if (kDebugMode) {
           print('📋 Datos de infraestructura cargados:');
           print('   - Propiedad: ${infrastructureInfo.propiedadPredio}');
-          print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
-          print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
+          print(
+            '   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})',
+          );
+          print(
+            '   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})',
+          );
         }
       } else {
         if (kDebugMode) {
-          print('📋 No hay datos previos de infraestructura, usando valores por defecto');
+          print(
+            '📋 No hay datos previos de infraestructura, usando valores por defecto',
+          );
         }
         // infrastructureInfo ya está inicializada con valores por defecto
         _proyectosController.clear();
@@ -70,6 +79,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       }
     }
   }
+
   Future<void> _clearFormData() async {
     // Mostrar diálogo de confirmación
     final bool? confirmed = await showDialog<bool>(
@@ -96,10 +106,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               const SizedBox(width: 12),
               const Text(
                 'Limpiar Formulario',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -147,7 +154,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           _otroPredioController.clear();
           _showErrors = false;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -167,7 +174,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
             ),
           );
         }
-        
+
         // Formulario y datos del almacenamiento limpiados
       } catch (e) {
         print('Error al limpiar formulario: $e');
@@ -193,6 +200,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       }
     }
   }
+
   Future<void> _saveData() async {
     setState(() {
       _showErrors = true;
@@ -200,7 +208,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
 
     // Validar que se haya seleccionado una opción de propiedad del predio
     bool isValid = _formKey.currentState!.validate();
-    
+
     if (infrastructureInfo.propiedadPredio.isEmpty) {
       isValid = false;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -215,9 +223,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           backgroundColor: Colors.orange.shade600,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
       return;
@@ -226,31 +232,51 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     if (isValid) {
       // Asegurar que todos los datos del formulario se guarden en el objeto
       infrastructureInfo.proyectosInfraestructura = _proyectosController.text;
-      infrastructureInfo.descripcionOtrosEspacios = _otrosEspaciosController.text;
+      infrastructureInfo.descripcionOtrosEspacios =
+          _otrosEspaciosController.text;
       infrastructureInfo.descripcionOtroPredio = _otroPredioController.text;
-      
-      try {        
+
+      try {
         // Actualizar Provider como las otras páginas
-        Provider.of<SurveyState>(context, listen: false)
-            .updateInfrastructureInfo(infrastructureInfo);
-        
+        Provider.of<SurveyState>(
+          context,
+          listen: false,
+        ).updateInfrastructureInfo(infrastructureInfo);
+
         // También guardar en StorageService para persistencia
         await StorageService.saveInfrastructureInfo(infrastructureInfo);
-        print('✅ Datos de infraestructura guardados correctamente en Provider y Storage');
-        print('   - Propiedad del predio: ${infrastructureInfo.propiedadPredio}');
-        
+        print(
+          '✅ Datos de infraestructura guardados correctamente en Provider y Storage',
+        );
+        print(
+          '   - Propiedad del predio: ${infrastructureInfo.propiedadPredio}',
+        );
+
         // Debug: Verificar cantidades guardadas
         print('🔍 Cantidades guardadas:');
-        print('   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})');
-        print('   - Comedor: ${infrastructureInfo.hasComedor} (${infrastructureInfo.cantidadComedor})');
-        print('   - Cocina: ${infrastructureInfo.hasCocina} (${infrastructureInfo.cantidadCocina})');
-        print('   - Salón Reuniones: ${infrastructureInfo.hasSalonReuniones} (${infrastructureInfo.cantidadSalonReuniones})');
-        print('   - Habitaciones: ${infrastructureInfo.hasHabitaciones} (${infrastructureInfo.cantidadHabitaciones})');
-        print('   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})');
-        print('   - Otros: ${infrastructureInfo.hasOtros} (${infrastructureInfo.cantidadOtros})');
-        
+        print(
+          '   - Salones: ${infrastructureInfo.hasSalones} (${infrastructureInfo.cantidadSalones})',
+        );
+        print(
+          '   - Comedor: ${infrastructureInfo.hasComedor} (${infrastructureInfo.cantidadComedor})',
+        );
+        print(
+          '   - Cocina: ${infrastructureInfo.hasCocina} (${infrastructureInfo.cantidadCocina})',
+        );
+        print(
+          '   - Salón Reuniones: ${infrastructureInfo.hasSalonReuniones} (${infrastructureInfo.cantidadSalonReuniones})',
+        );
+        print(
+          '   - Habitaciones: ${infrastructureInfo.hasHabitaciones} (${infrastructureInfo.cantidadHabitaciones})',
+        );
+        print(
+          '   - Baños: ${infrastructureInfo.hasBanos} (${infrastructureInfo.cantidadBanos})',
+        );
+        print(
+          '   - Otros: ${infrastructureInfo.hasOtros} (${infrastructureInfo.cantidadOtros})',
+        );
+
         if (mounted) {
- 
           // Usar el nuevo sistema de navegación con transiciones suaves
           FormNavigator.pushForm(
             context,
@@ -282,7 +308,11 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
         }
       }
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -291,13 +321,16 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     try {
       // Actualizar datos de controladores antes de guardar
       infrastructureInfo.proyectosInfraestructura = _proyectosController.text;
-      infrastructureInfo.descripcionOtrosEspacios = _otrosEspaciosController.text;
+      infrastructureInfo.descripcionOtrosEspacios =
+          _otrosEspaciosController.text;
       infrastructureInfo.descripcionOtroPredio = _otroPredioController.text;
-      
+
       // Actualizar Provider como las otras páginas
-      Provider.of<SurveyState>(context, listen: false)
-          .updateInfrastructureInfo(infrastructureInfo);
-      
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateInfrastructureInfo(infrastructureInfo);
+
       // También guardar en StorageService para persistencia
       await StorageService.saveInfrastructureInfo(infrastructureInfo);
       print('💾 Auto-guardado: Datos actualizados en Provider y Storage');
@@ -314,8 +347,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       currentStep: 4,
       onPrevious: () {
         // Guardar el estado actual antes de navegar
-        Provider.of<SurveyState>(context, listen: false)
-            .updateInfrastructureInfo(infrastructureInfo);
+        Provider.of<SurveyState>(
+          context,
+          listen: false,
+        ).updateInfrastructureInfo(infrastructureInfo);
         FormNavigator.popForm(context);
       },
       onNext: _saveData,
@@ -327,9 +362,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            autovalidateMode: _showErrors 
-                ? AutovalidateMode.always 
-                : AutovalidateMode.disabled,
+            autovalidateMode:
+                _showErrors
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -382,7 +418,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                           ),
                         ],
                       ),
-                    ),                    // Botón de limpiar en la esquina superior derecha
+                    ), // Botón de limpiar en la esquina superior derecha
                     Positioned(
                       top: 8,
                       right: 8,
@@ -397,7 +433,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                               blurRadius: 4,
                             ),
                           ],
-                        ),                        child: InkWell(
+                        ),
+                        child: InkWell(
                           onTap: _clearFormData,
                           borderRadius: BorderRadius.circular(20),
                           child: Padding(
@@ -431,20 +468,20 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Sección de espacios disponibles
                 _buildSpacesSection(),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Sección de proyectos de infraestructura
                 _buildProjectsSection(),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Sección de propiedad del predio
                 _buildPropertySection(),
-                
+
                 const SizedBox(height: 80), // Espacio para los botones fijos
               ],
             ),
@@ -459,7 +496,11 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       {'key': 'hasSalones', 'title': 'Salones', 'icon': Icons.school},
       {'key': 'hasComedor', 'title': 'Comedor', 'icon': Icons.restaurant},
       {'key': 'hasCocina', 'title': 'Cocina', 'icon': Icons.kitchen},
-      {'key': 'hasSalonReuniones', 'title': 'Salón para reuniones', 'icon': Icons.meeting_room},
+      {
+        'key': 'hasSalonReuniones',
+        'title': 'Salón para reuniones',
+        'icon': Icons.meeting_room,
+      },
       {'key': 'hasHabitaciones', 'title': 'Habitaciones', 'icon': Icons.bed},
       {'key': 'hasBanos', 'title': 'Baños', 'icon': Icons.wc},
       {'key': 'hasOtros', 'title': 'Otros espacios', 'icon': Icons.more_horiz},
@@ -477,10 +518,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,7 +561,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               ],
             ),
           ),
-          
+
           // Lista de espacios
           Padding(
             padding: const EdgeInsets.all(16),
@@ -551,58 +589,74 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
   Widget _buildSpaceCheckbox(Map<String, dynamic> space) {
     bool getValue() {
       switch (space['key']) {
-        case 'hasSalones': return infrastructureInfo.hasSalones;
-        case 'hasComedor': return infrastructureInfo.hasComedor;
-        case 'hasCocina': return infrastructureInfo.hasCocina;
-        case 'hasSalonReuniones': return infrastructureInfo.hasSalonReuniones;
-        case 'hasHabitaciones': return infrastructureInfo.hasHabitaciones;
-        case 'hasBanos': return infrastructureInfo.hasBanos;
-        case 'hasOtros': return infrastructureInfo.hasOtros;
-        default: return false;
+        case 'hasSalones':
+          return infrastructureInfo.hasSalones;
+        case 'hasComedor':
+          return infrastructureInfo.hasComedor;
+        case 'hasCocina':
+          return infrastructureInfo.hasCocina;
+        case 'hasSalonReuniones':
+          return infrastructureInfo.hasSalonReuniones;
+        case 'hasHabitaciones':
+          return infrastructureInfo.hasHabitaciones;
+        case 'hasBanos':
+          return infrastructureInfo.hasBanos;
+        case 'hasOtros':
+          return infrastructureInfo.hasOtros;
+        default:
+          return false;
       }
     }
 
     int getQuantity() {
       switch (space['key']) {
-        case 'hasSalones': return infrastructureInfo.cantidadSalones;
-        case 'hasComedor': return infrastructureInfo.cantidadComedor;
-        case 'hasCocina': return infrastructureInfo.cantidadCocina;
-        case 'hasSalonReuniones': return infrastructureInfo.cantidadSalonReuniones;
-        case 'hasHabitaciones': return infrastructureInfo.cantidadHabitaciones;
-        case 'hasBanos': return infrastructureInfo.cantidadBanos;
-        case 'hasOtros': return infrastructureInfo.cantidadOtros;
-        default: return 0;
+        case 'hasSalones':
+          return infrastructureInfo.cantidadSalones;
+        case 'hasComedor':
+          return infrastructureInfo.cantidadComedor;
+        case 'hasCocina':
+          return infrastructureInfo.cantidadCocina;
+        case 'hasSalonReuniones':
+          return infrastructureInfo.cantidadSalonReuniones;
+        case 'hasHabitaciones':
+          return infrastructureInfo.cantidadHabitaciones;
+        case 'hasBanos':
+          return infrastructureInfo.cantidadBanos;
+        case 'hasOtros':
+          return infrastructureInfo.cantidadOtros;
+        default:
+          return 0;
       }
     }
 
     void setValue(bool value) {
       setState(() {
         switch (space['key']) {
-          case 'hasSalones': 
+          case 'hasSalones':
             infrastructureInfo.hasSalones = value;
             if (!value) infrastructureInfo.cantidadSalones = 0;
             break;
-          case 'hasComedor': 
+          case 'hasComedor':
             infrastructureInfo.hasComedor = value;
             if (!value) infrastructureInfo.cantidadComedor = 0;
             break;
-          case 'hasCocina': 
+          case 'hasCocina':
             infrastructureInfo.hasCocina = value;
             if (!value) infrastructureInfo.cantidadCocina = 0;
             break;
-          case 'hasSalonReuniones': 
+          case 'hasSalonReuniones':
             infrastructureInfo.hasSalonReuniones = value;
             if (!value) infrastructureInfo.cantidadSalonReuniones = 0;
             break;
-          case 'hasHabitaciones': 
+          case 'hasHabitaciones':
             infrastructureInfo.hasHabitaciones = value;
             if (!value) infrastructureInfo.cantidadHabitaciones = 0;
             break;
-          case 'hasBanos': 
+          case 'hasBanos':
             infrastructureInfo.hasBanos = value;
             if (!value) infrastructureInfo.cantidadBanos = 0;
             break;
-          case 'hasOtros': 
+          case 'hasOtros':
             infrastructureInfo.hasOtros = value;
             if (!value) {
               infrastructureInfo.cantidadOtros = 0;
@@ -619,13 +673,27 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     void setQuantity(int quantity) {
       setState(() {
         switch (space['key']) {
-          case 'hasSalones': infrastructureInfo.cantidadSalones = quantity; break;
-          case 'hasComedor': infrastructureInfo.cantidadComedor = quantity; break;
-          case 'hasCocina': infrastructureInfo.cantidadCocina = quantity; break;
-          case 'hasSalonReuniones': infrastructureInfo.cantidadSalonReuniones = quantity; break;
-          case 'hasHabitaciones': infrastructureInfo.cantidadHabitaciones = quantity; break;
-          case 'hasBanos': infrastructureInfo.cantidadBanos = quantity; break;
-          case 'hasOtros': infrastructureInfo.cantidadOtros = quantity; break;
+          case 'hasSalones':
+            infrastructureInfo.cantidadSalones = quantity;
+            break;
+          case 'hasComedor':
+            infrastructureInfo.cantidadComedor = quantity;
+            break;
+          case 'hasCocina':
+            infrastructureInfo.cantidadCocina = quantity;
+            break;
+          case 'hasSalonReuniones':
+            infrastructureInfo.cantidadSalonReuniones = quantity;
+            break;
+          case 'hasHabitaciones':
+            infrastructureInfo.cantidadHabitaciones = quantity;
+            break;
+          case 'hasBanos':
+            infrastructureInfo.cantidadBanos = quantity;
+            break;
+          case 'hasOtros':
+            infrastructureInfo.cantidadOtros = quantity;
+            break;
         }
       });
       // Guardar automáticamente cuando se actualiza la cantidad
@@ -640,14 +708,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
-              ? Colors.green 
-              : Colors.grey.shade300,
+          color: isSelected ? Colors.green : Colors.grey.shade300,
           width: isSelected ? 2 : 1,
         ),
-        color: isSelected 
-            ? Colors.green.withValues(alpha: 0.05)
-            : Colors.white,
+        color: isSelected ? Colors.green.withValues(alpha: 0.05) : Colors.white,
       ),
       child: Column(
         children: [
@@ -664,29 +728,24 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: isSelected 
-                            ? Colors.green 
-                            : Colors.grey.shade400,
+                        color: isSelected ? Colors.green : Colors.grey.shade400,
                         width: 2,
                       ),
-                      color: isSelected 
-                          ? Colors.green 
-                          : Colors.white,
+                      color: isSelected ? Colors.green : Colors.white,
                     ),
-                    child: isSelected
-                        ? const Icon(
-                            Icons.check,
-                            size: 12,
-                            color: Colors.white,
-                          )
-                        : null,
+                    child:
+                        isSelected
+                            ? const Icon(
+                              Icons.check,
+                              size: 12,
+                              color: Colors.white,
+                            )
+                            : null,
                   ),
                   const SizedBox(width: 12),
                   Icon(
                     space['icon'],
-                    color: isSelected 
-                        ? Colors.green 
-                        : Colors.grey.shade400,
+                    color: isSelected ? Colors.green : Colors.grey.shade400,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -695,12 +754,12 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                       space['title'],
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: isSelected 
-                            ? FontWeight.w600 
-                            : FontWeight.w500,
-                        color: isSelected 
-                            ? Colors.green.shade700 
-                            : Colors.grey.shade700,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color:
+                            isSelected
+                                ? Colors.green.shade700
+                                : Colors.grey.shade700,
                       ),
                     ),
                   ),
@@ -708,7 +767,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               ),
             ),
           ),
-          
+
           // Campo de cantidad - aparece cuando está seleccionado
           if (isSelected) ...[
             Container(
@@ -720,7 +779,9 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const SizedBox(width: 32), // Alineación con el contenido superior
+                  const SizedBox(
+                    width: 32,
+                  ), // Alineación con el contenido superior
                   Text(
                     'Cantidad:',
                     style: TextStyle(
@@ -745,7 +806,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                       children: [
                         // Botón disminuir
                         InkWell(
-                          onTap: quantity > 0 ? () => setQuantity(quantity - 1) : null,
+                          onTap:
+                              quantity > 0
+                                  ? () => setQuantity(quantity - 1)
+                                  : null,
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(8),
                             bottomLeft: Radius.circular(8),
@@ -754,9 +818,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                             width: 32,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: quantity > 0 
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                              color:
+                                  quantity > 0
+                                      ? Colors.green.withValues(alpha: 0.1)
+                                      : Colors.grey.withValues(alpha: 0.1),
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(8),
                                 bottomLeft: Radius.circular(8),
@@ -765,13 +830,14 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                             child: Icon(
                               Icons.remove,
                               size: 16,
-                              color: quantity > 0 
-                                  ? Colors.green.shade600
-                                  : Colors.grey.shade400,
+                              color:
+                                  quantity > 0
+                                      ? Colors.green.shade600
+                                      : Colors.grey.shade400,
                             ),
                           ),
                         ),
-                        
+
                         // Campo numérico centrado con espacio suficiente
                         Expanded(
                           child: Container(
@@ -792,7 +858,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                             ),
                           ),
                         ),
-                        
+
                         // Botón aumentar
                         InkWell(
                           onTap: () => setQuantity(quantity + 1),
@@ -825,7 +891,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               ),
             ),
           ],
-          
+
           // Campo de descripción para "Otros espacios"
           if (isSelected && space['key'] == 'hasOtros') ...[
             Container(
@@ -870,7 +936,8 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                       maxLines: 2,
                       style: const TextStyle(fontSize: 14),
                       decoration: const InputDecoration(
-                        hintText: 'Ej: Biblioteca, laboratorio, auditorio, etc.',
+                        hintText:
+                            'Ej: Biblioteca, laboratorio, auditorio, etc.',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.all(12),
                         hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
@@ -899,10 +966,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,7 +1009,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               ],
             ),
           ),
-          
+
           // Campo de texto
           Padding(
             padding: const EdgeInsets.all(20),
@@ -973,12 +1037,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                     maxLines: 4,
                     minLines: 3,
                     textAlignVertical: TextAlignVertical.top,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
+                    style: const TextStyle(fontSize: 14, height: 1.4),
                     decoration: const InputDecoration(
-                      hintText: 'Ej: Canchas deportivas, nuevos baños, ampliación de salones, mejora del comedor, cocina escolar, etc.\n\nIndique también qué entidad está realizando estos proyectos.',
+                      hintText:
+                          'Ej: Canchas deportivas, nuevos baños, ampliación de salones, mejora del comedor, cocina escolar, etc.\n\nIndique también qué entidad está realizando estos proyectos.',
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(16),
                       hintStyle: TextStyle(
@@ -1017,10 +1079,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1063,7 +1122,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
               ],
             ),
           ),
-            // Opciones de propiedad
+          // Opciones de propiedad
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1126,8 +1185,10 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                ...propertyOptions.map((option) => _buildPropertyOption(option)).toList(),
-                
+                ...propertyOptions
+                    .map((option) => _buildPropertyOption(option))
+                    .toList(),
+
                 // Campo de texto para "Otro"
                 if (infrastructureInfo.propiedadPredio == 'Otro') ...[
                   const SizedBox(height: 16),
@@ -1171,10 +1232,14 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                               controller: _otroPredioController,
                               style: const TextStyle(fontSize: 14),
                               decoration: const InputDecoration(
-                                hintText: 'Ej: Iglesia, fundación, cooperativa, etc.',
+                                hintText:
+                                    'Ej: Iglesia, fundación, cooperativa, etc.',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.all(12),
-                                hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                                hintStyle: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
@@ -1199,14 +1264,11 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
-              ? Colors.purple 
-              : Colors.grey.shade300,
+          color: isSelected ? Colors.purple : Colors.grey.shade300,
           width: isSelected ? 2 : 1,
         ),
-        color: isSelected 
-            ? Colors.purple.withValues(alpha: 0.05)
-            : Colors.white,
+        color:
+            isSelected ? Colors.purple.withValues(alpha: 0.05) : Colors.white,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -1230,29 +1292,20 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected 
-                        ? Colors.purple 
-                        : Colors.grey.shade400,
+                    color: isSelected ? Colors.purple : Colors.grey.shade400,
                     width: 2,
                   ),
-                  color: isSelected 
-                      ? Colors.purple 
-                      : Colors.white,
+                  color: isSelected ? Colors.purple : Colors.white,
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        size: 12,
-                        color: Colors.white,
-                      )
-                    : null,
+                child:
+                    isSelected
+                        ? const Icon(Icons.check, size: 12, color: Colors.white)
+                        : null,
               ),
               const SizedBox(width: 12),
               Icon(
                 option['icon'],
-                color: isSelected 
-                    ? Colors.purple 
-                    : Colors.grey.shade400,
+                color: isSelected ? Colors.purple : Colors.grey.shade400,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1261,12 +1314,11 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
                   option['value'],
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: isSelected 
-                        ? FontWeight.w600 
-                        : FontWeight.w500,
-                    color: isSelected 
-                        ? Colors.purple.shade700 
-                        : Colors.grey.shade700,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color:
+                        isSelected
+                            ? Colors.purple.shade700
+                            : Colors.grey.shade700,
                   ),
                 ),
               ),
@@ -1283,7 +1335,7 @@ class _InfrastructureFormPageState extends State<InfrastructureFormPage> {
     _proyectosController.removeListener(_autoSaveData);
     _otrosEspaciosController.removeListener(_autoSaveData);
     _otroPredioController.removeListener(_autoSaveData);
-    
+
     _proyectosController.dispose();
     _otrosEspaciosController.dispose();
     _otroPredioController.dispose();

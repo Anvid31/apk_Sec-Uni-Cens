@@ -29,7 +29,9 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
     super.initState();
     _generalInfo = Provider.of<SurveyState>(context, listen: false).generalInfo;
     if (_generalInfo.department != null) {
-      _municipalities = LocationData.getMunicipalities(_generalInfo.department!);
+      _municipalities = LocationData.getMunicipalities(
+        _generalInfo.department!,
+      );
     }
   }
 
@@ -43,7 +45,7 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
     if (department == null) return;
     setState(() {
       _municipalities = LocationData.getMunicipalities(department);
-      if (_generalInfo.municipality != null && 
+      if (_generalInfo.municipality != null &&
           !_municipalities.contains(_generalInfo.municipality)) {
         _generalInfo.municipality = null;
       }
@@ -66,9 +68,10 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            autovalidateMode: _showErrors 
-                ? AutovalidateMode.always 
-                : AutovalidateMode.disabled,
+            autovalidateMode:
+                _showErrors
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -120,7 +123,7 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 CustomDateField(
                   label: 'Fecha de Diligenciamiento',
                   initialDate: _generalInfo.date,
@@ -130,9 +133,9 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                     });
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 LocationDropdown(
                   label: 'Departamento',
                   value: _generalInfo.department,
@@ -145,11 +148,13 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                       _updateMunicipalities(newValue);
                     });
                   },
-                  validator: (value) => value == null ? 'Seleccione un departamento' : null,
+                  validator:
+                      (value) =>
+                          value == null ? 'Seleccione un departamento' : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 LocationDropdown(
                   label: 'Municipio',
                   value: _generalInfo.municipality,
@@ -163,41 +168,43 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                       _generalInfo.municipality = newValue;
                     });
                   },
-                  validator: (value) => value == null ? 'Seleccione un municipio' : null,
+                  validator:
+                      (value) =>
+                          value == null ? 'Seleccione un municipio' : null,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Corregimiento',
                   onChanged: (value) => _generalInfo.district = value,
                   validator: (value) => null, // Campo no obligatorio
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Vereda',
                   onChanged: (value) => _generalInfo.village = value,
                   validator: (value) => null, // Campo no obligatorio
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Nombre del Entrevistado/a y cargo',
                   maxLines: 2,
                   onChanged: (value) => _generalInfo.intervieweeName = value,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Contacto',
                   hintText: 'Teléfono y/o correo electrónico',
                   onChanged: (value) => _generalInfo.contact = value,
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -206,15 +213,18 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
       ),
     );
   }
+
   void _submitForm() {
     setState(() {
       _showErrors = true;
     });
 
     if (_formKey.currentState!.validate()) {
-      Provider.of<SurveyState>(context, listen: false)
-          .updateGeneralInfo(_generalInfo);
-      
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateGeneralInfo(_generalInfo);
+
       // Usar el nuevo sistema de navegación con transiciones
       FormNavigator.pushForm(
         context,
@@ -223,7 +233,11 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
         stepNumber: 2,
       );
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),

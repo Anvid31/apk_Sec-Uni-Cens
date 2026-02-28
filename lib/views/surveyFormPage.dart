@@ -28,7 +28,9 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
     _generalInfo = Provider.of<SurveyState>(context, listen: false).generalInfo;
     // Si ya hay un departamento seleccionado, cargar sus municipios
     if (_generalInfo.department != null) {
-      _municipalities = LocationData.getMunicipalities(_generalInfo.department!);
+      _municipalities = LocationData.getMunicipalities(
+        _generalInfo.department!,
+      );
     }
   }
 
@@ -40,11 +42,11 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
 
   void _updateMunicipalities(String? department) {
     if (department == null) return;
-    
+
     setState(() {
       _municipalities = LocationData.getMunicipalities(department);
       // Solo resetear el municipio si el nuevo no está en la lista
-      if (_generalInfo.municipality != null && 
+      if (_generalInfo.municipality != null &&
           !_municipalities.contains(_generalInfo.municipality)) {
         _generalInfo.municipality = null;
       }
@@ -66,9 +68,10 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Form(
                   key: _formKey,
-                  autovalidateMode: _showErrors 
-                      ? AutovalidateMode.always 
-                      : AutovalidateMode.disabled,
+                  autovalidateMode:
+                      _showErrors
+                          ? AutovalidateMode.always
+                          : AutovalidateMode.disabled,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -82,7 +85,7 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      
+
                       CustomDateField(
                         label: 'Fecha de Diligenciamiento',
                         initialDate: _generalInfo.date,
@@ -93,7 +96,7 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Campo de Departamento con menú desplegable
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
@@ -102,22 +105,27 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                         ),
                         value: _generalInfo.department,
                         isExpanded: true,
-                        items: LocationData.departments.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
+                        items:
+                            LocationData.departments.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
                         onChanged: (String? newValue) {
                           setState(() {
                             _generalInfo.department = newValue;
                             _updateMunicipalities(newValue);
                           });
                         },
-                        validator: (value) => value == null ? 'Seleccione un departamento' : null,
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Seleccione un departamento'
+                                    : null,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Campo de Municipio con menú desplegable
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
@@ -126,44 +134,51 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
                         ),
                         value: _generalInfo.municipality,
                         isExpanded: true,
-                        items: _municipalities.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: _generalInfo.department != null
-                            ? (String? newValue) {
-                                setState(() {
-                                  _generalInfo.municipality = newValue;
-                                });
-                              }
-                            : null,
-                        validator: (value) => value == null ? 'Seleccione un municipio' : null,
+                        items:
+                            _municipalities.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                        onChanged:
+                            _generalInfo.department != null
+                                ? (String? newValue) {
+                                  setState(() {
+                                    _generalInfo.municipality = newValue;
+                                  });
+                                }
+                                : null,
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Seleccione un municipio'
+                                    : null,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       CustomTextField(
                         label: 'Corregimiento',
                         onChanged: (value) => _generalInfo.district = value,
                         validator: (value) => null, // Campo no obligatorio
                       ),
                       const SizedBox(height: 16),
-                      
+
                       CustomTextField(
                         label: 'Vereda',
                         onChanged: (value) => _generalInfo.village = value,
                         validator: (value) => null, // Campo no obligatorio
                       ),
                       const SizedBox(height: 16),
-                      
+
                       CustomTextField(
                         label: 'Nombre del Entrevistado/a y cargo',
                         maxLines: 2,
-                        onChanged: (value) => _generalInfo.intervieweeName = value,
+                        onChanged:
+                            (value) => _generalInfo.intervieweeName = value,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       CustomTextField(
                         label: 'Contacto',
                         hintText: 'Teléfono y/o correo electrónico',
@@ -197,11 +212,17 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
 
     if (_formKey.currentState!.validate()) {
       // Guardar datos en el provider
-      Provider.of<SurveyState>(context, listen: false)
-          .updateGeneralInfo(_generalInfo);
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateGeneralInfo(_generalInfo);
       Navigator.pushNamed(context, '/institutional');
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),

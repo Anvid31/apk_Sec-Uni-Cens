@@ -24,8 +24,10 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
   @override
   void initState() {
     super.initState();
-    _electricityInfo = Provider.of<SurveyState>(context, listen: false).electricityInfo;
-    _otherServiceController.text = _electricityInfo.otherElectricServiceDescription ?? '';
+    _electricityInfo =
+        Provider.of<SurveyState>(context, listen: false).electricityInfo;
+    _otherServiceController.text =
+        _electricityInfo.otherElectricServiceDescription ?? '';
     _observationsController.text = _electricityInfo.observations ?? '';
   }
 
@@ -35,7 +37,9 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
     _observationsController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }  @override
+  }
+
+  @override
   Widget build(BuildContext context) {
     return EnhancedFormContainer(
       title: 'Energía Eléctrica',
@@ -43,18 +47,21 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
       currentStep: 5,
       onPrevious: () {
         // Guardar el estado actual
-        Provider.of<SurveyState>(context, listen: false)
-            .updateElectricityInfo(_electricityInfo);
+        Provider.of<SurveyState>(
+          context,
+          listen: false,
+        ).updateElectricityInfo(_electricityInfo);
         FormNavigator.popForm(context);
       },
-      transitionType: FormTransitionType.slideScale,onNext: () {
+      transitionType: FormTransitionType.slideScale,
+      onNext: () {
         setState(() {
           _showErrors = true;
         });
-        
+
         // Validar que las preguntas estén respondidas
         bool isValid = true;
-        
+
         if (_electricityInfo.hasElectricService == null) {
           isValid = false;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -75,10 +82,11 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             ),
           );
         }
-        
+
         // Validar que si tiene servicio eléctrico, haya seleccionado el tipo
-        if (_electricityInfo.hasElectricService == true && 
-            (_electricityInfo.electricServiceType == null || _electricityInfo.electricServiceType!.isEmpty)) {
+        if (_electricityInfo.hasElectricService == true &&
+            (_electricityInfo.electricServiceType == null ||
+                _electricityInfo.electricServiceType!.isEmpty)) {
           isValid = false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -98,10 +106,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             ),
           );
         }
-        
+
         // Validar que si seleccionó "Otro", haya especificado cuál
-        if (_electricityInfo.electricServiceType == 'Otro' && 
-            (_electricityInfo.otherElectricServiceDescription == null || _electricityInfo.otherElectricServiceDescription!.trim().isEmpty)) {
+        if (_electricityInfo.electricServiceType == 'Otro' &&
+            (_electricityInfo.otherElectricServiceDescription == null ||
+                _electricityInfo.otherElectricServiceDescription!
+                    .trim()
+                    .isEmpty)) {
           isValid = false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -121,7 +132,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             ),
           );
         }
-        
+
         if (_electricityInfo.interestedInSolarPanels == null) {
           isValid = false;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -142,11 +153,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             ),
           );
         }
-          if (isValid && (_formKey.currentState?.validate() ?? false)) {
+        if (isValid && (_formKey.currentState?.validate() ?? false)) {
           // Guardar el estado actual
-          Provider.of<SurveyState>(context, listen: false)
-              .updateElectricityInfo(_electricityInfo);
-          
+          Provider.of<SurveyState>(
+            context,
+            listen: false,
+          ).updateElectricityInfo(_electricityInfo);
+
           // Usar el nuevo sistema de navegación con transiciones suaves
           FormNavigator.pushForm(
             context,
@@ -155,8 +168,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             stepNumber: 6,
           );
         } else {
-          _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-        }      },
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      },
       child: SingleChildScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
@@ -164,9 +182,10 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            autovalidateMode: _showErrors 
-                ? AutovalidateMode.always 
-                : AutovalidateMode.disabled,
+            autovalidateMode:
+                _showErrors
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -219,12 +238,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Primera pregunta - Servicio de energía eléctrica
                 _buildQuestionCard(
                   icon: Icons.power,
                   iconColor: Colors.green,
-                  question: '¿La sede educativa cuenta con servicio de energía eléctrica?',
+                  question:
+                      '¿La sede educativa cuenta con servicio de energía eléctrica?',
                   value: _electricityInfo.hasElectricService,
                   onChanged: (value) {
                     setState(() {
@@ -250,12 +270,13 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                 ],
 
                 const SizedBox(height: 24),
-                
+
                 // Segunda pregunta - Paneles solares
                 _buildQuestionCard(
                   icon: Icons.solar_power,
                   iconColor: Colors.orange,
-                  question: '¿Le interesaría instalar paneles solares en la escuela?',
+                  question:
+                      '¿Le interesaría instalar paneles solares en la escuela?',
                   value: _electricityInfo.interestedInSolarPanels,
                   onChanged: (value) {
                     setState(() {
@@ -265,7 +286,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   yesLabel: 'Sí, me interesa',
                   noLabel: 'No, no me interesa',
                 ),
-                
+
                 const SizedBox(height: 80), // Espacio para los botones fijos
               ],
             ),
@@ -296,10 +317,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,11 +340,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                     color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -343,7 +357,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
               ],
             ),
           ),
-          
+
           // Opciones de respuesta
           Padding(
             padding: const EdgeInsets.all(16),
@@ -355,14 +369,14 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: value == true 
-                          ? Colors.green 
-                          : Colors.grey.shade300,
+                      color:
+                          value == true ? Colors.green : Colors.grey.shade300,
                       width: value == true ? 2 : 1,
                     ),
-                    color: value == true 
-                        ? Colors.green.withValues(alpha: 0.05)
-                        : Colors.white,
+                    color:
+                        value == true
+                            ? Colors.green.withValues(alpha: 0.05)
+                            : Colors.white,
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -377,29 +391,31 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: value == true 
-                                    ? Colors.green 
-                                    : Colors.grey.shade400,
+                                color:
+                                    value == true
+                                        ? Colors.green
+                                        : Colors.grey.shade400,
                                 width: 2,
                               ),
-                              color: value == true 
-                                  ? Colors.green 
-                                  : Colors.white,
+                              color:
+                                  value == true ? Colors.green : Colors.white,
                             ),
-                            child: value == true
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 12,
-                                    color: Colors.white,
-                                  )
-                                : null,
+                            child:
+                                value == true
+                                    ? const Icon(
+                                      Icons.check,
+                                      size: 12,
+                                      color: Colors.white,
+                                    )
+                                    : null,
                           ),
                           const SizedBox(width: 12),
                           Icon(
                             Icons.check_circle,
-                            color: value == true 
-                                ? Colors.green 
-                                : Colors.grey.shade400,
+                            color:
+                                value == true
+                                    ? Colors.green
+                                    : Colors.grey.shade400,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -408,12 +424,14 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                               yesLabel,
                               style: TextStyle(
                                 fontSize: 15,
-                                fontWeight: value == true 
-                                    ? FontWeight.w600 
-                                    : FontWeight.w500,
-                                color: value == true 
-                                    ? Colors.green.shade700 
-                                    : Colors.grey.shade700,
+                                fontWeight:
+                                    value == true
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                color:
+                                    value == true
+                                        ? Colors.green.shade700
+                                        : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -422,20 +440,19 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                     ),
                   ),
                 ),
-                
+
                 // Opción No
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: value == false 
-                          ? Colors.red 
-                          : Colors.grey.shade300,
+                      color: value == false ? Colors.red : Colors.grey.shade300,
                       width: value == false ? 2 : 1,
                     ),
-                    color: value == false 
-                        ? Colors.red.withValues(alpha: 0.05)
-                        : Colors.white,
+                    color:
+                        value == false
+                            ? Colors.red.withValues(alpha: 0.05)
+                            : Colors.white,
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -450,29 +467,30 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: value == false 
-                                    ? Colors.red 
-                                    : Colors.grey.shade400,
+                                color:
+                                    value == false
+                                        ? Colors.red
+                                        : Colors.grey.shade400,
                                 width: 2,
                               ),
-                              color: value == false 
-                                  ? Colors.red 
-                                  : Colors.white,
+                              color: value == false ? Colors.red : Colors.white,
                             ),
-                            child: value == false
-                                ? const Icon(
-                                    Icons.close,
-                                    size: 12,
-                                    color: Colors.white,
-                                  )
-                                : null,
+                            child:
+                                value == false
+                                    ? const Icon(
+                                      Icons.close,
+                                      size: 12,
+                                      color: Colors.white,
+                                    )
+                                    : null,
                           ),
                           const SizedBox(width: 12),
                           Icon(
                             Icons.cancel,
-                            color: value == false 
-                                ? Colors.red 
-                                : Colors.grey.shade400,
+                            color:
+                                value == false
+                                    ? Colors.red
+                                    : Colors.grey.shade400,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -481,12 +499,14 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                               noLabel,
                               style: TextStyle(
                                 fontSize: 15,
-                                fontWeight: value == false 
-                                    ? FontWeight.w600 
-                                    : FontWeight.w500,
-                                color: value == false 
-                                    ? Colors.red.shade700 
-                                    : Colors.grey.shade700,
+                                fontWeight:
+                                    value == false
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                color:
+                                    value == false
+                                        ? Colors.red.shade700
+                                        : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -516,10 +536,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,7 +580,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
               ],
             ),
           ),
-          
+
           // Opciones de respuesta
           Padding(
             padding: const EdgeInsets.all(16),
@@ -604,7 +621,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   Icons.local_gas_station,
                   'Energias Renovables (Paneles solares, hídrico, biomasa, etc.)',
                 ),
-                
+
                 // Campo de texto para "Otro" - aparece cuando se selecciona Otro
                 if (_electricityInfo.electricServiceType == 'Otro') ...[
                   const SizedBox(height: 16),
@@ -643,10 +660,12 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                         TextFormField(
                           controller: _otherServiceController,
                           onChanged: (value) {
-                            _electricityInfo.otherElectricServiceDescription = value.trim();
+                            _electricityInfo.otherElectricServiceDescription =
+                                value.trim();
                           },
                           decoration: InputDecoration(
-                            hintText: 'Ej: Planta eléctrica comunitaria, micro-hidráulica, etc.',
+                            hintText:
+                                'Ej: Planta eléctrica comunitaria, micro-hidráulica, etc.',
                             hintStyle: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade500,
@@ -655,15 +674,22 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade400,
+                                width: 2,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -672,7 +698,8 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                           ),
                           maxLines: 2,
                           validator: (value) {
-                            if (_electricityInfo.electricServiceType == 'Otro' && 
+                            if (_electricityInfo.electricServiceType ==
+                                    'Otro' &&
                                 (value == null || value.trim().isEmpty)) {
                               return 'Por favor, especifique el tipo de servicio';
                             }
@@ -704,10 +731,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -751,7 +775,7 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
               ],
             ),
           ),
-          
+
           // Campo de texto
           Padding(
             padding: const EdgeInsets.all(20),
@@ -777,17 +801,16 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   child: TextFormField(
                     controller: _observationsController,
                     onChanged: (value) {
-                      _electricityInfo.observations = value.trim().isEmpty ? null : value.trim();
+                      _electricityInfo.observations =
+                          value.trim().isEmpty ? null : value.trim();
                     },
                     maxLines: 4,
                     minLines: 3,
                     textAlignVertical: TextAlignVertical.top,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
+                    style: const TextStyle(fontSize: 14, height: 1.4),
                     decoration: const InputDecoration(
-                      hintText: 'Ej: Calidad del servicio, cortes frecuentes, horarios de disponibilidad, voltaje, problemas técnicos, etc.',
+                      hintText:
+                          'Ej: Calidad del servicio, cortes frecuentes, horarios de disponibilidad, voltaje, problemas técnicos, etc.',
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(16),
                       hintStyle: TextStyle(
@@ -808,20 +831,16 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
 
   Widget _buildServiceTypeOption(String label, IconData icon, String value) {
     final isSelected = _electricityInfo.electricServiceType == value;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected 
-              ? Colors.blue 
-              : Colors.grey.shade300,
+          color: isSelected ? Colors.blue : Colors.grey.shade300,
           width: isSelected ? 2 : 1,
         ),
-        color: isSelected 
-            ? Colors.blue.withValues(alpha: 0.05)
-            : Colors.white,
+        color: isSelected ? Colors.blue.withValues(alpha: 0.05) : Colors.white,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -845,29 +864,20 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected 
-                        ? Colors.blue 
-                        : Colors.grey.shade400,
+                    color: isSelected ? Colors.blue : Colors.grey.shade400,
                     width: 2,
                   ),
-                  color: isSelected 
-                      ? Colors.blue 
-                      : Colors.white,
+                  color: isSelected ? Colors.blue : Colors.white,
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        size: 12,
-                        color: Colors.white,
-                      )
-                    : null,
+                child:
+                    isSelected
+                        ? const Icon(Icons.check, size: 12, color: Colors.white)
+                        : null,
               ),
               const SizedBox(width: 12),
               Icon(
                 icon,
-                color: isSelected 
-                    ? Colors.blue 
-                    : Colors.grey.shade400,
+                color: isSelected ? Colors.blue : Colors.grey.shade400,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -876,12 +886,11 @@ class _ElectricityFormPageState extends State<ElectricityFormPage> {
                   label,
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: isSelected 
-                        ? FontWeight.w600 
-                        : FontWeight.w500,
-                    color: isSelected 
-                        ? Colors.blue.shade700 
-                        : Colors.grey.shade700,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color:
+                        isSelected
+                            ? Colors.blue.shade700
+                            : Colors.grey.shade700,
                   ),
                 ),
               ),

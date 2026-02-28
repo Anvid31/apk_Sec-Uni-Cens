@@ -34,18 +34,18 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
     super.initState();
     final surveyState = Provider.of<SurveyState>(context, listen: false);
     _coverageInfo = surveyState.coverageInfo;
-    
+
     // Inicializar selectedLevels basado en los campos booleanos si existen
     _selectedLevels = [];
     if (_coverageInfo.preescolar == true) _selectedLevels.add('Preescolar');
     if (_coverageInfo.primaria == true) _selectedLevels.add('Primaria');
     if (_coverageInfo.segundaria == true) _selectedLevels.add('Secundaria');
-    
+
     // Si no hay booleanos definidos, usar educationalLevels como fallback
     if (_selectedLevels.isEmpty && _coverageInfo.educationalLevels != null) {
       _selectedLevels = _coverageInfo.educationalLevels ?? [];
     }
-    
+
     _educationalLevelsController.text = _selectedLevels.join(', ');
   }
 
@@ -61,7 +61,7 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
       _selectedLevels = levels;
       _coverageInfo.educationalLevels = levels;
       _educationalLevelsController.text = levels.join(', ');
-      
+
       // Actualizar campos booleanos basados en los niveles seleccionados
       _coverageInfo.preescolar = levels.contains('Preescolar');
       _coverageInfo.primaria = levels.contains('Primaria');
@@ -79,23 +79,24 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
               title: const Text('Niveles educativos'),
               content: SingleChildScrollView(
                 child: ListBody(
-                  children: _availableLevels.map((level) {
-                    return CheckboxListTile(
-                      title: Text(level),
-                      value: _selectedLevels.contains(level),
-                      onChanged: (bool? selected) {
-                        setState(() {
-                          if (selected ?? false) {
-                            if (!_selectedLevels.contains(level)) {
-                              _selectedLevels.add(level);
-                            }
-                          } else {
-                            _selectedLevels.remove(level);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                  children:
+                      _availableLevels.map((level) {
+                        return CheckboxListTile(
+                          title: Text(level),
+                          value: _selectedLevels.contains(level),
+                          onChanged: (bool? selected) {
+                            setState(() {
+                              if (selected ?? false) {
+                                if (!_selectedLevels.contains(level)) {
+                                  _selectedLevels.add(level);
+                                }
+                              } else {
+                                _selectedLevels.remove(level);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
                 ),
               ),
               actions: [
@@ -112,10 +113,12 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
                 ),
               ],
             );
-          },        );
+          },
+        );
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return EnhancedFormContainer(
@@ -132,9 +135,10 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            autovalidateMode: _showErrors 
-                ? AutovalidateMode.always 
-                : AutovalidateMode.disabled,
+            autovalidateMode:
+                _showErrors
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -171,7 +175,8 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2E2E2E),
                         ),
-                        textAlign: TextAlign.center,                      ),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Información sobre estudiantes, docentes y niveles educativos ofertados',
@@ -186,38 +191,38 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 CustomNumberField(
                   label: 'N° alumnos Totales',
                   initialValue: _coverageInfo.totalStudents,
                   onChanged: (value) => _coverageInfo.totalStudents = value,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomNumberField(
                   label: 'N° niños',
                   initialValue: _coverageInfo.boysCount,
                   onChanged: (value) => _coverageInfo.boysCount = value,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomNumberField(
                   label: 'N° niñas',
                   initialValue: _coverageInfo.girlsCount,
                   onChanged: (value) => _coverageInfo.girlsCount = value,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 CustomNumberField(
                   label: 'N° Docentes',
                   initialValue: _coverageInfo.teachersCount,
                   onChanged: (value) => _coverageInfo.teachersCount = value,
                 ),
                 const SizedBox(height: 16),
-                
+
                 TextFormField(
                   controller: _educationalLevelsController,
                   decoration: InputDecoration(
@@ -247,6 +252,7 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
       ),
     );
   }
+
   void _submitForm() {
     setState(() {
       _showErrors = true;
@@ -254,10 +260,13 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
 
     if (_formKey.currentState!.validate()) {
       // Validaciones adicionales
-      if (_coverageInfo.totalStudents != (_coverageInfo.boysCount ?? 0) + (_coverageInfo.girlsCount ?? 0)) {
+      if (_coverageInfo.totalStudents !=
+          (_coverageInfo.boysCount ?? 0) + (_coverageInfo.girlsCount ?? 0)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('El número total de alumnos debe ser igual a la suma de niños y niñas'),
+            content: Text(
+              'El número total de alumnos debe ser igual a la suma de niños y niñas',
+            ),
             backgroundColor: Color(0xFFD32F2F),
             behavior: SnackBarBehavior.floating,
             margin: EdgeInsets.all(16),
@@ -266,17 +275,24 @@ class _CoverageFormPageState extends State<CoverageFormPage> {
         return;
       }
 
-      Provider.of<SurveyState>(context, listen: false)
-          .updateCoverageInfo(_coverageInfo);
-      
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateCoverageInfo(_coverageInfo);
+
       // Usar el nuevo sistema de navegación con transiciones
       FormNavigator.pushForm(
         context,
         const InfrastructureFormPage(),
         type: FormTransitionType.slideScale,
-        stepNumber: 4,      );
+        stepNumber: 4,
+      );
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),

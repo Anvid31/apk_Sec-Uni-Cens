@@ -607,6 +607,7 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                 },
               ),
               const SizedBox(height: 12),
+
               TextFormField(
                 key: _accessObsKey,
                 controller: _accessObservationsController,
@@ -618,6 +619,22 @@ class _FurnitureGeneralPageState extends State<FurnitureGeneralPage> {
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.description),
                 ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6.0),
+                    child: Text(
+                      'Indique el casco urbano más cercano a la sede, cuánto tiempo tarda y qué medios de transporte utiliza para llegar a esa sede desde el casco urbano.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[800],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -45,10 +45,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
             spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -84,7 +81,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
               ],
             ),
             const SizedBox(height: 20),
-            
+
             // Contenido principal
             Row(
               children: [
@@ -108,7 +105,9 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF4CAF50,
+                            ).withValues(alpha: 0.3),
                             width: 1,
                           ),
                           color: Colors.white,
@@ -117,13 +116,14 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                           children: [
                             // Botón disminuir
                             InkWell(
-                              onTap: appliance.quantity > 0 
-                                  ? () {
-                                      setState(() {
-                                        appliance.quantity--;
-                                      });
-                                    }
-                                  : null,
+                              onTap:
+                                  appliance.quantity > 0
+                                      ? () {
+                                        setState(() {
+                                          appliance.quantity--;
+                                        });
+                                      }
+                                      : null,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(12),
                                 bottomLeft: Radius.circular(12),
@@ -132,9 +132,12 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                 width: 40,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: appliance.quantity > 0 
-                                      ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                                      : Colors.grey.withValues(alpha: 0.1),
+                                  color:
+                                      appliance.quantity > 0
+                                          ? const Color(
+                                            0xFF4CAF50,
+                                          ).withValues(alpha: 0.1)
+                                          : Colors.grey.withValues(alpha: 0.1),
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(12),
                                     bottomLeft: Radius.circular(12),
@@ -143,13 +146,14 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                 child: Icon(
                                   Icons.remove,
                                   size: 20,
-                                  color: appliance.quantity > 0 
-                                      ? const Color(0xFF4CAF50)
-                                      : Colors.grey.shade400,
+                                  color:
+                                      appliance.quantity > 0
+                                          ? const Color(0xFF4CAF50)
+                                          : Colors.grey.shade400,
                                 ),
                               ),
                             ),
-                            
+
                             // Campo numérico
                             Expanded(
                               child: Container(
@@ -164,7 +168,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                 ),
                               ),
                             ),
-                            
+
                             // Botón aumentar
                             InkWell(
                               onTap: () {
@@ -180,7 +184,9 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                 width: 40,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                                  color: const Color(
+                                    0xFF4CAF50,
+                                  ).withValues(alpha: 0.1),
                                   borderRadius: const BorderRadius.only(
                                     topRight: Radius.circular(12),
                                     bottomRight: Radius.circular(12),
@@ -200,7 +206,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                   ),
                 ),
                 const SizedBox(width: 20),
-                
+
                 // Estado de uso
                 Expanded(
                   flex: 2,
@@ -235,11 +241,14 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: appliance.isInUse == true
-                                        ? const Color(0xFF4CAF50)
-                                        : Colors.transparent,
+                                    color:
+                                        appliance.isInUse == true
+                                            ? const Color(0xFF4CAF50)
+                                            : Colors.transparent,
                                     borderRadius: const BorderRadius.horizontal(
                                       left: Radius.circular(12),
                                     ),
@@ -250,17 +259,19 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                       Icon(
                                         Icons.check_circle,
                                         size: 16,
-                                        color: appliance.isInUse == true
-                                            ? Colors.white
-                                            : Colors.grey.shade400,
+                                        color:
+                                            appliance.isInUse == true
+                                                ? Colors.white
+                                                : Colors.grey.shade400,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'Sí',
                                         style: TextStyle(
-                                          color: appliance.isInUse == true
-                                              ? Colors.white
-                                              : Colors.grey.shade600,
+                                          color:
+                                              appliance.isInUse == true
+                                                  ? Colors.white
+                                                  : Colors.grey.shade600,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -285,11 +296,14 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                   });
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: appliance.isInUse == false
-                                        ? Colors.red.shade400
-                                        : Colors.transparent,
+                                    color:
+                                        appliance.isInUse == false
+                                            ? Colors.red.shade400
+                                            : Colors.transparent,
                                     borderRadius: const BorderRadius.horizontal(
                                       right: Radius.circular(12),
                                     ),
@@ -300,17 +314,19 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                                       Icon(
                                         Icons.cancel,
                                         size: 16,
-                                        color: appliance.isInUse == false
-                                            ? Colors.white
-                                            : Colors.grey.shade400,
+                                        color:
+                                            appliance.isInUse == false
+                                                ? Colors.white
+                                                : Colors.grey.shade400,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'No',
                                         style: TextStyle(
-                                          color: appliance.isInUse == false
-                                              ? Colors.white
-                                              : Colors.grey.shade600,
+                                          color:
+                                              appliance.isInUse == false
+                                                  ? Colors.white
+                                                  : Colors.grey.shade600,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -335,7 +351,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
 
   void _showAddApplianceDialog() {
     final TextEditingController nameController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -360,10 +376,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
               const SizedBox(width: 12),
               const Text(
                 'Agregar Electrodoméstico',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -373,10 +386,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
             children: [
               const Text(
                 'Ingrese el nombre del electrodoméstico o equipo eléctrico:',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 16),
               Container(
@@ -430,15 +440,18 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                 final String name = nameController.text.trim();
                 if (name.isNotEmpty) {
                   // Verificar si ya existe un electrodoméstico con el mismo nombre
-                  if (_appliancesInfo.appliances.any((item) => 
-                      item.name.toLowerCase() == name.toLowerCase())) {
+                  if (_appliancesInfo.appliances.any(
+                    (item) => item.name.toLowerCase() == name.toLowerCase(),
+                  )) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Row(
                           children: [
                             Icon(Icons.warning, color: Colors.white),
                             SizedBox(width: 8),
-                            Text('Ya existe un electrodoméstico con ese nombre'),
+                            Text(
+                              'Ya existe un electrodoméstico con ese nombre',
+                            ),
                           ],
                         ),
                         backgroundColor: Colors.orange.shade600,
@@ -453,17 +466,17 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                   }
 
                   setState(() {
-                    _appliancesInfo.appliances.add(
-                      ApplianceItem(name: name)
-                    );
+                    _appliancesInfo.appliances.add(ApplianceItem(name: name));
                   });
 
                   // Actualizar el estado global
-                  Provider.of<SurveyState>(context, listen: false)
-                      .updateAppliancesInfo(_appliancesInfo);
+                  Provider.of<SurveyState>(
+                    context,
+                    listen: false,
+                  ).updateAppliancesInfo(_appliancesInfo);
 
                   Navigator.of(context).pop();
-                  
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Row(
@@ -486,9 +499,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
               },
               child: const Text(
                 'Agregar',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -567,7 +578,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Lista de electrodomésticos
                 if (_appliancesInfo.appliances.isEmpty)
                   Column(
@@ -670,10 +681,10 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                     ],
                   )
                 else
-                  ..._appliancesInfo.appliances.map((appliance) => 
-                    _buildApplianceItem(appliance),
-                  ).toList(),
-                
+                  ..._appliancesInfo.appliances
+                      .map((appliance) => _buildApplianceItem(appliance))
+                      .toList(),
+
                 // Botón agregar electrodoméstico (al final de la lista)
                 if (_appliancesInfo.appliances.isNotEmpty)
                   Container(
@@ -731,7 +742,7 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
                       ),
                     ),
                   ),
-                
+
                 const SizedBox(height: 80), // Espacio para los botones fijos
               ],
             ),
@@ -743,9 +754,11 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
 
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
-      Provider.of<SurveyState>(context, listen: false)
-          .updateAppliancesInfo(_appliancesInfo);
-      
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateAppliancesInfo(_appliancesInfo);
+
       // Usar el nuevo sistema de navegación con transiciones suaves
       FormNavigator.pushForm(
         context,
@@ -754,7 +767,11 @@ class _AppliancesFormPageState extends State<AppliancesFormPage> {
         stepNumber: 7,
       );
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 }

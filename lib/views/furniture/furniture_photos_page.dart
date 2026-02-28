@@ -142,7 +142,7 @@ class _FurniturePhotosPageState extends State<FurniturePhotosPage> {
               label: 'Foto Comedor',
               imagePath: _photoInterna,
               onImageSelected: (path) => setState(() => _photoInterna = path),
-              required: true,
+              required: false,
             ),
           ],
         ),

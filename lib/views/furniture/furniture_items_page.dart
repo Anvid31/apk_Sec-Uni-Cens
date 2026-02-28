@@ -318,7 +318,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                   if (_tieneCocina) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'Ej: 1 mesón con azafates, 3 mesones de trabajo cocina, 2 mesas de cafetería plegable, 1 estufa enana de un quemador, estufa lineal de tres quemadores, etc.',
+                      'Ej: 1 Nevera, 2 congeladores, 1 licuadora, 1 recipiente plastico, 2 balde plastico, 1 caldero, 1 ollas aluminio recortado, 1olla a presión, 1 olleta, 1 paila, 2 sartén, 1 jarra plastica, 1 tabla para picar, 3 cucharon, 2 rallador, 2 coladores, 1 asador antiaderente, 1 batidor de chocolate, 1 exprimidor manual, 1 olla arrocera, 1 balanza gramera, 1 cafetera, 50 cucharas, 60 tenedor, 60 cuchillo,30  plato hondo, 40 plato pando grande y pequeño, 80 posillos, 70 vasos, etc.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.indigo.shade700,
@@ -340,7 +340,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Ej: 1 nevera, 2 congeladores, 1 licuadora, 1 recipiente plástico, etc.',
+                      'Ej: 1 mesón con azafates, 1 mesón de trabajo cocina, 2 mesa de cafeteria plegable, 1 estufa enana de un quemador, 1 estufa lineal de tres quemadores, etc.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.indigo.shade700,
@@ -408,7 +408,7 @@ class _FurnitureItemsPageState extends State<FurnitureItemsPage> {
                   if (_necesitaBotiquin) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'Ej: 1 camilla, 2 botiquines gabinete fijo, 6 canecas riesgo biológico, 3 contenedores de punzantes, báscula con tallímetro, etc.',
+                      'Ej: 2 camillas, 1 Escalinata 2 peldaños, 3 botiquin gavinete fijo, 5 caneca riesgo biologico, 1 contenedor de punzantes, 3 báscula con tallímetro, etc.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.indigo.shade700,

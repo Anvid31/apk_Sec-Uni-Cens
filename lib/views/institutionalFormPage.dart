@@ -19,7 +19,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
   final ScrollController _scrollController = ScrollController();
   late InstitutionalInfo _institutionalInfo;
   bool _showErrors = false;
-  
+
   // Agregar controllers
   final _institutionNameController = TextEditingController();
   final _headquartersController = TextEditingController();
@@ -32,14 +32,15 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     super.initState();
     final surveyState = Provider.of<SurveyState>(context, listen: false);
     _institutionalInfo = surveyState.institutionalInfo;
-    
+
     // Inicializar controllers
     _institutionNameController.text = _institutionalInfo.institutionName ?? '';
-    _headquartersController.text = _institutionalInfo.educationalHeadquarters ?? '';
+    _headquartersController.text =
+        _institutionalInfo.educationalHeadquarters ?? '';
     _principalNameController.text = _institutionalInfo.principalName ?? '';
     _contactController.text = _institutionalInfo.contact ?? '';
     _emailController.text = _institutionalInfo.email ?? '';
-    
+
     // Agregar listeners para auto-guardado
     _institutionNameController.addListener(_autoSaveData);
     _headquartersController.addListener(_autoSaveData);
@@ -57,11 +58,13 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
       _institutionalInfo.principalName = _principalNameController.text;
       _institutionalInfo.contact = _contactController.text;
       _institutionalInfo.email = _emailController.text;
-      
+
       // Actualizar Provider
-      Provider.of<SurveyState>(context, listen: false)
-          .updateInstitutionalInfo(_institutionalInfo);
-      
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateInstitutionalInfo(_institutionalInfo);
+
       print('💾 Auto-guardado: Datos institucionales actualizados en Provider');
       print('   - Email: ${_institutionalInfo.email}');
     } catch (e) {
@@ -77,7 +80,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     _principalNameController.removeListener(_autoSaveData);
     _contactController.removeListener(_autoSaveData);
     _emailController.removeListener(_autoSaveData);
-    
+
     _institutionNameController.dispose();
     _headquartersController.dispose();
     _principalNameController.dispose();
@@ -85,7 +88,9 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
     _emailController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }  @override
+  }
+
+  @override
   Widget build(BuildContext context) {
     return EnhancedFormContainer(
       title: 'Información Institucional',
@@ -101,9 +106,10 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            autovalidateMode: _showErrors 
-                ? AutovalidateMode.always 
-                : AutovalidateMode.disabled,
+            autovalidateMode:
+                _showErrors
+                    ? AutovalidateMode.always
+                    : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -155,11 +161,12 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),                
+                const SizedBox(height: 24),
                 CustomTextField(
                   label: 'Nombre de la Institución Educativa - Principal',
                   controller: _institutionNameController,
-                  onChanged: (value) => _institutionalInfo.institutionName = value,
+                  onChanged:
+                      (value) => _institutionalInfo.institutionName = value,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Este campo es requerido';
@@ -168,11 +175,13 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Nombre Sede Educativa',
                   controller: _headquartersController,
-                  onChanged: (value) => _institutionalInfo.educationalHeadquarters = value,
+                  onChanged:
+                      (value) =>
+                          _institutionalInfo.educationalHeadquarters = value,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Este campo es requerido';
@@ -181,18 +190,20 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 LocationField(
-                  label: 'Ubicación geográfica de la sede educativa (Coordenadas) - Oprima el botón para adquirir ubicación',
+                  label:
+                      'Ubicación geográfica de la sede educativa (Coordenadas) - Oprima el botón para adquirir ubicación',
                   initialValue: _institutionalInfo.location,
                   onChanged: (value) => _institutionalInfo.location = value,
                 ),
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Nombre del Rector',
                   controller: _principalNameController,
-                  onChanged: (value) => _institutionalInfo.principalName = value,
+                  onChanged:
+                      (value) => _institutionalInfo.principalName = value,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Este campo es requerido';
@@ -201,7 +212,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Telefono del Rector',
                   keyboardType: TextInputType.phone,
@@ -215,7 +226,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 CustomTextField(
                   label: 'Correo Electrónico del Rector',
                   keyboardType: TextInputType.emailAddress,
@@ -225,35 +236,50 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
                     if (value == null || value.isEmpty) {
                       return 'Este campo es requerido';
                     }
-                    
+
                     // Validación básica de formato de email
                     if (!value.contains('@')) {
                       return 'Ingrese un correo electrónico válido';
                     }
-                    
+
                     // Validación completa con expresión regular
                     final emailRegex = RegExp(
-                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
                     );
-                    
+
                     if (!emailRegex.hasMatch(value)) {
                       return 'Formato de correo inválido (ej: usuario@ejemplo.com)';
                     }
-                    
+
                     // Verificar que tenga una terminación válida
                     final validDomains = [
-                      '.com', '.co', '.org', '.net', '.edu', '.gov', 
-                      '.es', '.mx', '.ar', '.cl', '.pe', '.ve', '.ec',
-                      '.gmail.com', '.hotmail.com', '.yahoo.com', '.outlook.com'
+                      '.com',
+                      '.co',
+                      '.org',
+                      '.net',
+                      '.edu',
+                      '.gov',
+                      '.es',
+                      '.mx',
+                      '.ar',
+                      '.cl',
+                      '.pe',
+                      '.ve',
+                      '.ec',
+                      '.gmail.com',
+                      '.hotmail.com',
+                      '.yahoo.com',
+                      '.outlook.com',
                     ];
-                    
-                    final hasValidDomain = validDomains.any((domain) => 
-                      value.toLowerCase().endsWith(domain));
-                    
+
+                    final hasValidDomain = validDomains.any(
+                      (domain) => value.toLowerCase().endsWith(domain),
+                    );
+
                     if (!hasValidDomain) {
                       return 'Terminación de correo no válida (ej: .com, .co, .org)';
                     }
-                    
+
                     return null;
                   },
                 ),
@@ -265,6 +291,7 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
       ),
     );
   }
+
   void _submitForm() {
     setState(() {
       _showErrors = true;
@@ -277,15 +304,17 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
       _institutionalInfo.principalName = _principalNameController.text;
       _institutionalInfo.contact = _contactController.text;
       _institutionalInfo.email = _emailController.text;
-      
+
       // Debug: Verificar que el email se está guardando
       print('✅ Enviando datos institucionales:');
       print('   - Nombre Institución: ${_institutionalInfo.institutionName}');
       print('   - Email: ${_institutionalInfo.email}');
-      
-      Provider.of<SurveyState>(context, listen: false)
-          .updateInstitutionalInfo(_institutionalInfo);
-      
+
+      Provider.of<SurveyState>(
+        context,
+        listen: false,
+      ).updateInstitutionalInfo(_institutionalInfo);
+
       // Usar el nuevo sistema de navegación con transiciones
       FormNavigator.pushForm(
         context,
@@ -294,7 +323,11 @@ class _InstitutionalFormPageState extends State<InstitutionalFormPage> {
         stepNumber: 3,
       );
     } else {
-      _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, complete todos los campos requeridos'),
