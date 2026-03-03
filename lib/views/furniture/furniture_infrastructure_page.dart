@@ -71,6 +71,8 @@ class _FurnitureInfrastructurePageState
 
   bool _hasEnergy = false;
   String? _fuenteEnergia;
+  final TextEditingController _numeroClienteEnergiaCtrl =
+      TextEditingController();
 
   bool _hasAgua = false;
   String? _fuenteAgua;
@@ -90,6 +92,7 @@ class _FurnitureInfrastructurePageState
   @override
   void dispose() {
     _scrollController.dispose();
+    _numeroClienteEnergiaCtrl.dispose();
     super.dispose();
   }
 
@@ -127,6 +130,7 @@ class _FurnitureInfrastructurePageState
 
     _hasEnergy = _surveyState.tieneEnergia;
     _fuenteEnergia = _surveyState.fuenteEnergia;
+    _numeroClienteEnergiaCtrl.text = _surveyState.numeroClienteEnergia ?? '';
 
     _hasAgua = _surveyState.tieneAgua;
     _fuenteAgua = _surveyState.fuenteAgua;
@@ -266,6 +270,16 @@ class _FurnitureInfrastructurePageState
         );
         return;
       }
+      if (_hasEnergy &&
+          _fuenteEnergia == 'Red CENS' &&
+          _numeroClienteEnergiaCtrl.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Indique el Número de Cliente de Energía'),
+          ),
+        );
+        return;
+      }
       if (_hasAgua && (_fuenteAgua == null || _fuenteAgua!.isEmpty)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Seleccione la fuente de agua')),
@@ -309,6 +323,10 @@ class _FurnitureInfrastructurePageState
         tieneEnergia: _hasEnergy,
         fuenteEnergia:
             _hasEnergy ? _fuenteEnergia : '', // Usar variable local string
+        numeroClienteEnergia:
+            (_hasEnergy && _fuenteEnergia == 'Red CENS')
+                ? _numeroClienteEnergiaCtrl.text
+                : '',
 
         tieneAgua: _hasAgua,
         fuenteAgua: _hasAgua ? _fuenteAgua : '',
@@ -883,6 +901,7 @@ class _FurnitureInfrastructurePageState
                     (val) => setState(() {
                       _hasEnergy = val;
                       if (!val) _fuenteEnergia = null;
+                      if (!val) _numeroClienteEnergiaCtrl.clear();
                     }),
                 children: [
                   _buildRadioOption(
@@ -892,6 +911,23 @@ class _FurnitureInfrastructurePageState
                     (v) => setState(() => _fuenteEnergia = v),
                     Icons.electrical_services,
                   ),
+                  if (_fuenteEnergia == 'Red CENS')
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, bottom: 12),
+                      child: CustomTextField(
+                        controller: _numeroClienteEnergiaCtrl,
+                        label: 'Número de Cliente',
+                        hintText: 'Ingrese el número de cliente',
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (_hasEnergy && _fuenteEnergia == 'Red CENS') {
+                            if (v == null || v.isEmpty)
+                              return 'El número de cliente es requerido';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
                   _buildRadioOption(
                     'Planta Eléctrica (ACPM/Gasolina)',
                     'Planta Eléctrica',

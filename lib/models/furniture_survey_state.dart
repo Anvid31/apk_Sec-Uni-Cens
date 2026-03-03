@@ -11,7 +11,7 @@ class FurnitureSurveyState extends ChangeNotifier {
   String? zona; // 'Urbano' o 'Rural'
   String corregimiento = '';
   String vereda = '';
-  
+
   String nombreEntrevistado = '';
   String cargoEntrevistado = '';
   String contactoEntrevistado = '';
@@ -72,10 +72,11 @@ class FurnitureSurveyState extends ChangeNotifier {
 
   String proyectosEjecucion = '';
   String serviciosPublicos = ''; // Quizás deprecated o 'otros servicios'
-  
+
   bool tieneEnergia = false;
   String fuenteEnergia = '';
-  
+  String? numeroClienteEnergia;
+
   bool tieneAgua = false;
   String fuenteAgua = '';
 
@@ -106,7 +107,7 @@ class FurnitureSurveyState extends ChangeNotifier {
   List<Map<String, dynamic>> otrosElectrodomesticos = [];
 
   // Deprecated or kept for compatibility if needed, but we will ignore it in UI
-  String electrodomesticos = ''; 
+  String electrodomesticos = '';
   bool tieneInternet = false;
 
   // --- Evidencia Fotográfica ---
@@ -118,7 +119,7 @@ class FurnitureSurveyState extends ChangeNotifier {
 
   // --- Items Mobiliario ---
   late List<FurnitureItem> items;
-  
+
   // --- Dotación Especial ---
   bool tieneCocina = false;
   String necesidadesMobiliarioCocina = '';
@@ -159,18 +160,23 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (zona != null) this.zona = zona;
     if (corregimiento != null) this.corregimiento = corregimiento;
     if (vereda != null) this.vereda = vereda;
-    if (nombreEntrevistado != null) this.nombreEntrevistado = nombreEntrevistado;
+    if (nombreEntrevistado != null)
+      this.nombreEntrevistado = nombreEntrevistado;
     if (cargoEntrevistado != null) this.cargoEntrevistado = cargoEntrevistado;
-    if (contactoEntrevistado != null) this.contactoEntrevistado = contactoEntrevistado;
+    if (contactoEntrevistado != null)
+      this.contactoEntrevistado = contactoEntrevistado;
     if (nombreRector != null) this.nombreRector = nombreRector;
     if (contactoRector != null) this.contactoRector = contactoRector;
     if (emailRector != null) this.emailRector = emailRector;
-    if (nombreInstitucionPrincipal != null) this.nombreInstitucionPrincipal = nombreInstitucionPrincipal;
-    if (nombreSedeEducativa != null) this.nombreSedeEducativa = nombreSedeEducativa;
+    if (nombreInstitucionPrincipal != null)
+      this.nombreInstitucionPrincipal = nombreInstitucionPrincipal;
+    if (nombreSedeEducativa != null)
+      this.nombreSedeEducativa = nombreSedeEducativa;
     if (latitud != null) this.latitud = latitud;
     if (longitud != null) this.longitud = longitud;
     if (tipoAcceso != null) this.tipoAcceso = tipoAcceso;
-    if (observacionesAcceso != null) this.observacionesAcceso = observacionesAcceso;
+    if (observacionesAcceso != null)
+      this.observacionesAcceso = observacionesAcceso;
     if (riesgoCierre != null) this.riesgoCierre = riesgoCierre;
     if (motivoCierre != null) this.motivoCierre = motivoCierre;
     notifyListeners();
@@ -189,47 +195,71 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (numMujeres != null) this.numMujeres = numMujeres;
     if (numHombres != null) this.numHombres = numHombres;
     if (numDocentes != null) this.numDocentes = numDocentes;
-    if (aniosFuncionamiento != null) this.aniosFuncionamiento = aniosFuncionamiento;
+    if (aniosFuncionamiento != null)
+      this.aniosFuncionamiento = aniosFuncionamiento;
     if (nivelesEducativos != null) this.nivelesEducativos = nivelesEducativos;
     if (jornada != null) this.jornada = jornada;
     notifyListeners();
   }
 
   void updateInfrastructure({
-    bool? hasSalones, int? cantidadSalones, String? estadoSalones,
-    bool? hasComedor, int? cantidadComedor, String? estadoComedor,
-    bool? hasCocina, int? cantidadCocina, String? estadoCocina,
-    bool? hasSalonReuniones, int? cantidadSalonReuniones, String? estadoSalonReuniones,
-    bool? hasHabitaciones, int? cantidadHabitaciones, String? estadoHabitaciones,
-    bool? hasBanos, int? cantidadBanos, String? estadoBanos,
-    bool? hasOtros, int? cantidadOtros, String? estadoOtros, String? descripcionOtrosEspacios,
+    bool? hasSalones,
+    int? cantidadSalones,
+    String? estadoSalones,
+    bool? hasComedor,
+    int? cantidadComedor,
+    String? estadoComedor,
+    bool? hasCocina,
+    int? cantidadCocina,
+    String? estadoCocina,
+    bool? hasSalonReuniones,
+    int? cantidadSalonReuniones,
+    String? estadoSalonReuniones,
+    bool? hasHabitaciones,
+    int? cantidadHabitaciones,
+    String? estadoHabitaciones,
+    bool? hasBanos,
+    int? cantidadBanos,
+    String? estadoBanos,
+    bool? hasOtros,
+    int? cantidadOtros,
+    String? estadoOtros,
+    String? descripcionOtrosEspacios,
     String? proyectosEjecucion,
     String? serviciosPublicos,
     bool? tieneEnergia,
     String? fuenteEnergia,
+    String? numeroClienteEnergia,
     bool? tieneAgua,
     String? fuenteAgua,
     bool? tieneGas,
     String? fuenteGas,
-    
+
     // Electrodomésticos replacements
-    bool? hasNevera, int? cantidadNevera,
-    bool? hasTelevisor, int? cantidadTelevisor,
-    bool? hasComputador, int? cantidadComputador,
-    bool? hasVentilador, int? cantidadVentilador,
-    bool? hasVideoBeam, int? cantidadVideoBeam,
-    bool? hasImpresora, int? cantidadImpresora,
-    bool? hasEquipoSonido, int? cantidadEquipoSonido,
-    
+    bool? hasNevera,
+    int? cantidadNevera,
+    bool? hasTelevisor,
+    int? cantidadTelevisor,
+    bool? hasComputador,
+    int? cantidadComputador,
+    bool? hasVentilador,
+    int? cantidadVentilador,
+    bool? hasVideoBeam,
+    int? cantidadVideoBeam,
+    bool? hasImpresora,
+    int? cantidadImpresora,
+    bool? hasEquipoSonido,
+    int? cantidadEquipoSonido,
+
     List<Map<String, dynamic>>? otrosElectrodomesticos,
-    
+
     String? electrodomesticos, // Kept for minimal breakage
     bool? tieneInternet,
   }) {
     if (hasSalones != null) this.hasSalones = hasSalones;
     if (cantidadSalones != null) this.cantidadSalones = cantidadSalones;
     if (estadoSalones != null) this.estadoSalones = estadoSalones;
-    
+
     if (hasComedor != null) this.hasComedor = hasComedor;
     if (cantidadComedor != null) this.cantidadComedor = cantidadComedor;
     if (estadoComedor != null) this.estadoComedor = estadoComedor;
@@ -239,12 +269,16 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (estadoCocina != null) this.estadoCocina = estadoCocina;
 
     if (hasSalonReuniones != null) this.hasSalonReuniones = hasSalonReuniones;
-    if (cantidadSalonReuniones != null) this.cantidadSalonReuniones = cantidadSalonReuniones;
-    if (estadoSalonReuniones != null) this.estadoSalonReuniones = estadoSalonReuniones;
+    if (cantidadSalonReuniones != null)
+      this.cantidadSalonReuniones = cantidadSalonReuniones;
+    if (estadoSalonReuniones != null)
+      this.estadoSalonReuniones = estadoSalonReuniones;
 
     if (hasHabitaciones != null) this.hasHabitaciones = hasHabitaciones;
-    if (cantidadHabitaciones != null) this.cantidadHabitaciones = cantidadHabitaciones;
-    if (estadoHabitaciones != null) this.estadoHabitaciones = estadoHabitaciones;
+    if (cantidadHabitaciones != null)
+      this.cantidadHabitaciones = cantidadHabitaciones;
+    if (estadoHabitaciones != null)
+      this.estadoHabitaciones = estadoHabitaciones;
 
     if (hasBanos != null) this.hasBanos = hasBanos;
     if (cantidadBanos != null) this.cantidadBanos = cantidadBanos;
@@ -253,12 +287,16 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (hasOtros != null) this.hasOtros = hasOtros;
     if (cantidadOtros != null) this.cantidadOtros = cantidadOtros;
     if (estadoOtros != null) this.estadoOtros = estadoOtros;
-    if (descripcionOtrosEspacios != null) this.descripcionOtrosEspacios = descripcionOtrosEspacios;
+    if (descripcionOtrosEspacios != null)
+      this.descripcionOtrosEspacios = descripcionOtrosEspacios;
 
-    if (proyectosEjecucion != null) this.proyectosEjecucion = proyectosEjecucion;
+    if (proyectosEjecucion != null)
+      this.proyectosEjecucion = proyectosEjecucion;
     if (serviciosPublicos != null) this.serviciosPublicos = serviciosPublicos;
     if (tieneEnergia != null) this.tieneEnergia = tieneEnergia;
     if (fuenteEnergia != null) this.fuenteEnergia = fuenteEnergia;
+    if (numeroClienteEnergia != null)
+      this.numeroClienteEnergia = numeroClienteEnergia;
     if (tieneAgua != null) this.tieneAgua = tieneAgua;
     if (fuenteAgua != null) this.fuenteAgua = fuenteAgua;
     if (tieneGas != null) this.tieneGas = tieneGas;
@@ -271,25 +309,29 @@ class FurnitureSurveyState extends ChangeNotifier {
     if (cantidadTelevisor != null) this.cantidadTelevisor = cantidadTelevisor;
 
     if (hasComputador != null) this.hasComputador = hasComputador;
-    if (cantidadComputador != null) this.cantidadComputador = cantidadComputador;
+    if (cantidadComputador != null)
+      this.cantidadComputador = cantidadComputador;
 
     if (hasVentilador != null) this.hasVentilador = hasVentilador;
-    if (cantidadVentilador != null) this.cantidadVentilador = cantidadVentilador;
-    
+    if (cantidadVentilador != null)
+      this.cantidadVentilador = cantidadVentilador;
+
     if (hasVideoBeam != null) this.hasVideoBeam = hasVideoBeam;
     if (cantidadVideoBeam != null) this.cantidadVideoBeam = cantidadVideoBeam;
 
     if (hasImpresora != null) this.hasImpresora = hasImpresora;
     if (cantidadImpresora != null) this.cantidadImpresora = cantidadImpresora;
-    
-    if (hasEquipoSonido != null) this.hasEquipoSonido = hasEquipoSonido;
-    if (cantidadEquipoSonido != null) this.cantidadEquipoSonido = cantidadEquipoSonido;
 
-    if (otrosElectrodomesticos != null) this.otrosElectrodomesticos = otrosElectrodomesticos;
+    if (hasEquipoSonido != null) this.hasEquipoSonido = hasEquipoSonido;
+    if (cantidadEquipoSonido != null)
+      this.cantidadEquipoSonido = cantidadEquipoSonido;
+
+    if (otrosElectrodomesticos != null)
+      this.otrosElectrodomesticos = otrosElectrodomesticos;
 
     if (electrodomesticos != null) this.electrodomesticos = electrodomesticos;
     if (tieneInternet != null) this.tieneInternet = tieneInternet;
-    
+
     notifyListeners();
   }
 
@@ -309,20 +351,23 @@ class FurnitureSurveyState extends ChangeNotifier {
   }
 
   void updateDotation({
-     bool? tieneCocina,
-     String? necesidadesMobiliarioCocina,
-     String? necesidadesUtensiliosCocina,
-     bool? necesitaBotiquin,
-     String? necesidadesEmergencia,
+    bool? tieneCocina,
+    String? necesidadesMobiliarioCocina,
+    String? necesidadesUtensiliosCocina,
+    bool? necesitaBotiquin,
+    String? necesidadesEmergencia,
   }) {
     if (tieneCocina != null) this.tieneCocina = tieneCocina;
-    if (necesidadesMobiliarioCocina != null) this.necesidadesMobiliarioCocina = necesidadesMobiliarioCocina;
-    if (necesidadesUtensiliosCocina != null) this.necesidadesUtensiliosCocina = necesidadesUtensiliosCocina;
+    if (necesidadesMobiliarioCocina != null)
+      this.necesidadesMobiliarioCocina = necesidadesMobiliarioCocina;
+    if (necesidadesUtensiliosCocina != null)
+      this.necesidadesUtensiliosCocina = necesidadesUtensiliosCocina;
     if (necesitaBotiquin != null) this.necesitaBotiquin = necesitaBotiquin;
-    if (necesidadesEmergencia != null) this.necesidadesEmergencia = necesidadesEmergencia;
+    if (necesidadesEmergencia != null)
+      this.necesidadesEmergencia = necesidadesEmergencia;
     notifyListeners();
   }
-  
+
   void updateItems(List<FurnitureItem> newItems) {
     items = newItems;
     notifyListeners();
@@ -336,113 +381,147 @@ class FurnitureSurveyState extends ChangeNotifier {
     zona = null;
     corregimiento = '';
     vereda = '';
-    
+
     // ... resetear el resto ...
     items = FurnitureCatalog.getItems();
     notifyListeners();
   }
 
   Future<void> submit() async {
-      // Filtrar items: Solo guardar los que tienen cantidad > 0 o alguna observación escrita
-      final filledItems = items.where((item) => item.quantity > 0 || item.observations.isNotEmpty).toList();
+    // Filtrar items: Solo guardar los que tienen cantidad > 0 o alguna observación escrita
+    final filledItems =
+        items
+            .where((item) => item.quantity > 0 || item.observations.isNotEmpty)
+            .toList();
 
-      // Mapeo corregido para coincidir con la UI actual (Fotos Page)
-      final photosMap = <String, String>{};
-      if (photoPanoramica != null) photosMap['panoramica_sede'] = photoPanoramica!;
-      if (photoTablero != null) photosMap['aula_1'] = photoTablero!;    // Antes tablero_general
-      if (photoCocina != null) photosMap['cocina'] = photoCocina!;
-      if (photoComedor != null) photosMap['aula_2'] = photoComedor!;    // La variable se llama photoComedor pero en UI es Aula 2
-      if (photoInterna != null) photosMap['comedor'] = photoInterna!;   // La variable se llama photoInterna pero en UI es Comedor
+    // Mapeo corregido para coincidir con la UI actual (Fotos Page)
+    final photosMap = <String, String>{};
+    if (photoPanoramica != null)
+      photosMap['panoramica_sede'] = photoPanoramica!;
+    if (photoTablero != null)
+      photosMap['aula_1'] = photoTablero!; // Antes tablero_general
+    if (photoCocina != null) photosMap['cocina'] = photoCocina!;
+    if (photoComedor != null)
+      photosMap['aula_2'] =
+          photoComedor!; // La variable se llama photoComedor pero en UI es Aula 2
+    if (photoInterna != null)
+      photosMap['comedor'] =
+          photoInterna!; // La variable se llama photoInterna pero en UI es Comedor
 
-      final surveyId = DateTime.now().millisecondsSinceEpoch.toString();
+    final surveyId = DateTime.now().millisecondsSinceEpoch.toString();
 
-      final surveyData = {
-        'id': surveyId,
-        'tipoFormulario': 'mobiliario',
-        'timestamp': DateTime.now().toIso8601String(),
-        'datos': {
-          'informacionGeneral': {
-            'fecha': fecha.toIso8601String(),
-            'departamento': departamento,
-            'municipio': municipio,
-            'zona': zona,
-            'corregimiento': corregimiento,
-            'vereda': vereda,
-            'entrevistado': {
-              'nombre': nombreEntrevistado,
-              'cargo': cargoEntrevistado,
-              'contacto': contactoEntrevistado,
-            },
-            'institucion': {
-               'nombreRector': nombreRector,
-               'contactoRector': contactoRector,
-               'emailRector': emailRector,
-               'nombreInstitucionPrincipal': nombreInstitucionPrincipal,
-               'nombreSedeEducativa': nombreSedeEducativa,
-            },
-            'ubicacion': {
-              'latitud': latitud,
-              'longitud': longitud,
-              'tipoAcceso': tipoAcceso,
-              'observacionesAcceso': observacionesAcceso,
-            },
-           'riesgos': {
-              'riesgoCierre': riesgoCierre,
-              'motivo': motivoCierre,
-            },
+    final surveyData = {
+      'id': surveyId,
+      'tipoFormulario': 'mobiliario',
+      'timestamp': DateTime.now().toIso8601String(),
+      'datos': {
+        'informacionGeneral': {
+          'fecha': fecha.toIso8601String(),
+          'departamento': departamento,
+          'municipio': municipio,
+          'zona': zona,
+          'corregimiento': corregimiento,
+          'vereda': vereda,
+          'entrevistado': {
+            'nombre': nombreEntrevistado,
+            'cargo': cargoEntrevistado,
+            'contacto': contactoEntrevistado,
           },
-          'informacionCobertura': {
-             'numAlumnos': int.tryParse(numAlumnos) ?? 0,
-             'numMujeres': int.tryParse(numMujeres) ?? 0,
-             'numHombres': int.tryParse(numHombres) ?? 0,
-             'numDocentes': int.tryParse(numDocentes) ?? 0,
-             'aniosFuncionamiento': aniosFuncionamiento,
-             'nivelesEducativos': nivelesEducativos,
+          'institucion': {
+            'nombreRector': nombreRector,
+            'contactoRector': contactoRector,
+            'emailRector': emailRector,
+            'nombreInstitucionPrincipal': nombreInstitucionPrincipal,
+            'nombreSedeEducativa': nombreSedeEducativa,
           },
-          'diagnosticoInfraestructura': {
-            // Espacios
-            'hasSalones': hasSalones, 'cantidadSalones': cantidadSalones, 'estadoSalones': estadoSalones,
-            'hasComedor': hasComedor, 'cantidadComedor': cantidadComedor, 'estadoComedor': estadoComedor,
-            'hasCocina': hasCocina, 'cantidadCocina': cantidadCocina, 'estadoCocina': estadoCocina,
-            'hasSalonReuniones': hasSalonReuniones, 'cantidadSalonReuniones': cantidadSalonReuniones, 'estadoSalonReuniones': estadoSalonReuniones,
-            'hasHabitaciones': hasHabitaciones, 'cantidadHabitaciones': cantidadHabitaciones, 'estadoHabitaciones': estadoHabitaciones,
-            'hasBanos': hasBanos, 'cantidadBanos': cantidadBanos, 'estadoBanos': estadoBanos,
-            'hasOtros': hasOtros, 'cantidadOtros': cantidadOtros, 'estadoOtros': estadoOtros, 'descripcionOtrosEspacios': descripcionOtrosEspacios,
-            
-            // Servicios
-            'proyectosEjecucion': proyectosEjecucion,
-            'energia': { 'tiene': tieneEnergia, 'fuente': fuenteEnergia },
-            'agua': { 'tiene': tieneAgua, 'fuente': fuenteAgua },
-            'gas': { 'tiene': tieneGas, 'fuente': fuenteGas },
-            'internet': { 'tiene': tieneInternet },
-            
-            // Electrodomésticos (Estructura optimizada)
-            'electrodomesticos': {
-                'nevera': {'tiene': hasNevera, 'cantidad': cantidadNevera},
-                'televisor': {'tiene': hasTelevisor, 'cantidad': cantidadTelevisor},
-                'computador': {'tiene': hasComputador, 'cantidad': cantidadComputador},
-                'ventilador': {'tiene': hasVentilador, 'cantidad': cantidadVentilador},
-                'videoBeam': {'tiene': hasVideoBeam, 'cantidad': cantidadVideoBeam},
-                'impresora': {'tiene': hasImpresora, 'cantidad': cantidadImpresora},
-                'equipoSonido': {'tiene': hasEquipoSonido, 'cantidad': cantidadEquipoSonido},
-            },
-            'otrosElectrodomesticos': otrosElectrodomesticos,
+          'ubicacion': {
+            'latitud': latitud,
+            'longitud': longitud,
+            'tipoAcceso': tipoAcceso,
+            'observacionesAcceso': observacionesAcceso,
           },
-          'items': filledItems.map((e) => e.toJson()).toList(),
-          'dotacionCocina': {
-            'tieneCocina': tieneCocina,
-            'necesidadesMobiliario': necesidadesMobiliarioCocina,
-            'necesidadesUtensilios': necesidadesUtensiliosCocina,
-          },
-          'dotacionEmergencia': {
-            'necesitaBotiquin': necesitaBotiquin,
-            'necesidades': necesidadesEmergencia,
-          },
-          'fotos': photosMap,
+          'riesgos': {'riesgoCierre': riesgoCierre, 'motivo': motivoCierre},
         },
-        'nombreInstitucion': nombreSedeEducativa,
-      };
+        'informacionCobertura': {
+          'numAlumnos': int.tryParse(numAlumnos) ?? 0,
+          'numMujeres': int.tryParse(numMujeres) ?? 0,
+          'numHombres': int.tryParse(numHombres) ?? 0,
+          'numDocentes': int.tryParse(numDocentes) ?? 0,
+          'aniosFuncionamiento': aniosFuncionamiento,
+          'nivelesEducativos': nivelesEducativos,
+        },
+        'diagnosticoInfraestructura': {
+          // Espacios
+          'hasSalones': hasSalones,
+          'cantidadSalones': cantidadSalones,
+          'estadoSalones': estadoSalones,
+          'hasComedor': hasComedor,
+          'cantidadComedor': cantidadComedor,
+          'estadoComedor': estadoComedor,
+          'hasCocina': hasCocina,
+          'cantidadCocina': cantidadCocina,
+          'estadoCocina': estadoCocina,
+          'hasSalonReuniones': hasSalonReuniones,
+          'cantidadSalonReuniones': cantidadSalonReuniones,
+          'estadoSalonReuniones': estadoSalonReuniones,
+          'hasHabitaciones': hasHabitaciones,
+          'cantidadHabitaciones': cantidadHabitaciones,
+          'estadoHabitaciones': estadoHabitaciones,
+          'hasBanos': hasBanos,
+          'cantidadBanos': cantidadBanos,
+          'estadoBanos': estadoBanos,
+          'hasOtros': hasOtros,
+          'cantidadOtros': cantidadOtros,
+          'estadoOtros': estadoOtros,
+          'descripcionOtrosEspacios': descripcionOtrosEspacios,
 
-      await AutoSyncService.scheduleImmediateSync(surveyData);
+          // Servicios
+          'proyectosEjecucion': proyectosEjecucion,
+          'energia': {
+            'tiene': tieneEnergia,
+            'fuente': fuenteEnergia,
+            'numeroCliente': numeroClienteEnergia ?? '',
+          },
+          'agua': {'tiene': tieneAgua, 'fuente': fuenteAgua},
+          'gas': {'tiene': tieneGas, 'fuente': fuenteGas},
+          'internet': {'tiene': tieneInternet},
+
+          // Electrodomésticos (Estructura optimizada)
+          'electrodomesticos': {
+            'nevera': {'tiene': hasNevera, 'cantidad': cantidadNevera},
+            'televisor': {'tiene': hasTelevisor, 'cantidad': cantidadTelevisor},
+            'computador': {
+              'tiene': hasComputador,
+              'cantidad': cantidadComputador,
+            },
+            'ventilador': {
+              'tiene': hasVentilador,
+              'cantidad': cantidadVentilador,
+            },
+            'videoBeam': {'tiene': hasVideoBeam, 'cantidad': cantidadVideoBeam},
+            'impresora': {'tiene': hasImpresora, 'cantidad': cantidadImpresora},
+            'equipoSonido': {
+              'tiene': hasEquipoSonido,
+              'cantidad': cantidadEquipoSonido,
+            },
+          },
+          'otrosElectrodomesticos': otrosElectrodomesticos,
+        },
+        'items': filledItems.map((e) => e.toJson()).toList(),
+        'dotacionCocina': {
+          'tieneCocina': tieneCocina,
+          'necesidadesMobiliario': necesidadesMobiliarioCocina,
+          'necesidadesUtensilios': necesidadesUtensiliosCocina,
+        },
+        'dotacionEmergencia': {
+          'necesitaBotiquin': necesitaBotiquin,
+          'necesidades': necesidadesEmergencia,
+        },
+        'fotos': photosMap,
+      },
+      'nombreInstitucion': nombreSedeEducativa,
+    };
+
+    await AutoSyncService.scheduleImmediateSync(surveyData);
   }
 }
