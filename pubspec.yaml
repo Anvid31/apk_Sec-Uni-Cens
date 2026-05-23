@@ -31,6 +31,7 @@ dependencies:
   archive: ^3.4.10
   connectivity_plus: ^6.1.5
   csv: ^5.0.2
+  dio: ^5.8.0
   flutter:
     sdk: flutter
   flutter_dotenv: ^5.1.0
@@ -43,7 +44,10 @@ dependencies:
   json_annotation: ^4.8.1
   mailer: ^6.0.1
   mongo_dart: ^0.10.5
+  open_file: ^3.5.7
+  package_info_plus: ^8.3.0
   path: ^1.8.3
+  postgres: ^3.5.5
   path_provider: ^2.1.1
   provider: ^6.1.1
   share_plus: ^10.0.3

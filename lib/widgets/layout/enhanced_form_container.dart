@@ -59,9 +59,12 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
   
   late AnimationController _headerController;
   late AnimationController _contentController;
+  late AnimationController _collapseController;
   late Animation<double> _headerAnimation;
   late Animation<double> _contentAnimation;
   late Animation<Offset> _contentSlideAnimation;
+  late Animation<double> _collapseAnimation;
+  bool _headerCollapsed = false;
 
   @override
   void initState() {
@@ -101,6 +104,16 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
       curve: Curves.easeOutCubic,
     ));
 
+    _collapseController = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+      value: 1.0,
+    );
+    _collapseAnimation = CurvedAnimation(
+      parent: _collapseController,
+      curve: Curves.easeInOutCubic,
+    );
+
     // Iniciar animaciones
     _startAnimations();
   }
@@ -111,10 +124,20 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     _contentController.forward();
   }
 
+  void _toggleHeader() {
+    setState(() => _headerCollapsed = !_headerCollapsed);
+    if (_headerCollapsed) {
+      _collapseController.reverse();
+    } else {
+      _collapseController.forward();
+    }
+  }
+
   @override
   void dispose() {
     _headerController.dispose();
     _contentController.dispose();
+    _collapseController.dispose();
     super.dispose();
   }
 
@@ -127,8 +150,15 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
       body: Column(
         children: [
           // Header animado mejorado
-          _buildAnimatedHeader(),
+          SizeTransition(
+            sizeFactor: _collapseAnimation,
+            axisAlignment: -1.0,
+            child: _buildAnimatedHeader(),
+          ),
           
+          // Drag handle – siempre accesible independientemente del estado del header
+          if (widget.showDragHandle) _buildDragHandle(),
+
           // Contenido principal
           Expanded(
             child: _buildAnimatedContent(),
@@ -407,61 +437,69 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
             opacity: _contentAnimation,
             child: Container(
               width: double.infinity,
-              margin: const EdgeInsets.only(top: 0),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x1A000000),
-                    offset: Offset(0, -8),
-                    blurRadius: 32,
-                    spreadRadius: 0,
+              color: Colors.white,
+              child: Column(
+                children: [
+                  // Contenido
+                  Expanded(
+                    child: widget.customScrolling
+                        ? Padding(
+                            padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                            child: widget.child,
+                          )
+                        : SingleChildScrollView(
+                            physics: const ClampingScrollPhysics(),
+                            padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                            child: widget.child,
+                          ),
                   ),
                 ],
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-                child: Column(
-                  children: [
-                    // Indicador visual de drag
-                    if (widget.showDragHandle)
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    
-                    // Contenido
-                    Expanded(
-                      child: widget.customScrolling
-                          ? Padding(
-                              padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                              child: widget.child,
-                            )
-                          : SingleChildScrollView(
-                              physics: const ClampingScrollPhysics(),
-                              padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                              child: widget.child,
-                            ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return GestureDetector(
+      onTap: _toggleHeader,
+      onVerticalDragEnd: (details) {
+        final v = details.primaryVelocity ?? 0;
+        if (v < -300 && !_headerCollapsed) _toggleHeader();
+        if (v > 300 && _headerCollapsed) _toggleHeader();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x1A000000),
+              offset: Offset(0, -8),
+              blurRadius: 32,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Container(
+            width: 40,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

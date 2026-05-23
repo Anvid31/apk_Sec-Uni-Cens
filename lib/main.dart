@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models/survey_state.dart';
 import 'models/furniture_survey_state.dart';
+import 'models/unified_survey_state.dart';
 import 'views/selection_page.dart'; // Cambio: Importamos SelectionPage
 import 'config/theme.dart';
 import 'services/storage_service.dart';
@@ -60,6 +61,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => SurveyState()),
         ChangeNotifierProvider(create: (_) => FurnitureSurveyState()),
+        ChangeNotifierProvider(create: (_) => UnifiedSurveyState()),
       ],
       child: const MyApp(),
     ),

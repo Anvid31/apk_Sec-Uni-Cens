@@ -1,11 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/theme.dart';
+import '../services/shapefile_export_service.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 import 'survey_form_page.dart';
 import 'furniture/furniture_general_page.dart';
+import 'unified/phase1_info_general_page.dart';
 
-class SelectionPage extends StatelessWidget {
+class SelectionPage extends StatefulWidget {
   const SelectionPage({Key? key}) : super(key: key);
+
+  @override
+  State<SelectionPage> createState() => _SelectionPageState();
+}
+
+class _SelectionPageState extends State<SelectionPage> {
+  bool _exportingShapefile = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Verificar actualizaciones después del primer frame
+    // para no bloquear la UI durante la carga inicial.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+  }
+
+  Future<void> _checkForUpdate() async {
+    try {
+      final info = await UpdateService.checkForUpdate();
+      if (info != null && mounted) {
+        showUpdateDialog(context, info);
+      }
+    } catch (_) {
+      // Silencioso: no interrumpir el flujo si la verificación falla.
+    }
+  }
+
+  Future<void> _exportShapefile() async {
+    setState(() => _exportingShapefile = true);
+    try {
+      final path = await ShapefileExportService.exportFromDatabase();
+      if (path == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay sedes con coordenadas en la base de datos.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar Shapefile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportingShapefile = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,30 +128,46 @@ class SelectionPage extends StatelessWidget {
                     children: [
                       _buildSelectionCard(
                         context,
-                        title: 'Caracterización de Sedes',
-                        subtitle: 'Infraestructura, servicios, cobertura y registro fotográfico.',
-                        icon: Icons.school_outlined,
+                        title: 'Formulario de Caracterización',
+                        subtitle: 'Información general, dotación, energía y agua.',
+                        icon: Icons.assignment_outlined,
                         color: AppTheme.primaryColor,
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const SurveyFormPage()),
+                            MaterialPageRoute(
+                                builder: (_) => const Phase1InfoGeneralPage()),
                           );
                         },
                       ),
                       const SizedBox(height: 20),
-                      _buildSelectionCard(
-                        context,
-                        title: 'Inventario de Mobiliario',
-                        subtitle: 'Registro detallado de aulas, bibliotecas y equipos.',
-                        icon: Icons.chair_alt_outlined,
-                        color: AppTheme.secondaryColor,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const FurnitureGeneralPage()),
-                          );
-                        },
+                      // Botón Exportar Shapefile
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _exportingShapefile ? null : _exportShapefile,
+                          icon: _exportingShapefile
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                  ),
+                                )
+                              : const Icon(Icons.map_outlined),
+                          label: Text(_exportingShapefile
+                              ? 'Exportando...'
+                              : 'Exportar Shapefile'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            side: const BorderSide(color: AppTheme.primaryColor),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

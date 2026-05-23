@@ -21,6 +21,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Permiso para instalar APKs (actualización automática) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- Configuración para url_launcher en Android 11+ -->
     <queries>
         <intent>
@@ -30,6 +33,14 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" />
+        </intent>
+        <!-- Query para instalar APKs (actualización automática) -->
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
         </intent>
     </queries>
     

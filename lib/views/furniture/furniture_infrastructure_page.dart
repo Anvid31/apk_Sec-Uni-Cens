@@ -965,6 +965,13 @@ class _FurnitureInfrastructurePageState
                     }),
                 children: [
                   _buildRadioOption(
+                    'Acueducto Urbano',
+                    'Acueducto Urbano',
+                    _fuenteAgua,
+                    (v) => setState(() => _fuenteAgua = v),
+                    Icons.location_city,
+                  ),
+                  _buildRadioOption(
                     'Acueducto Veredal',
                     'Acueducto Veredal',
                     _fuenteAgua,
