@@ -1,68 +1,34 @@
-📱 CaracT Móvil - Información del APK
+CENS Caracterización — Información del APK
 ==========================================
 
-🎯 Versión: 1.0.0
-📅 Fecha de build: 14 de julio de 2025
-🏗️ Build por: GitHub Copilot
+Versión: 1.0.1
+Plataforma: Android 7.0+ (API 24)
 
-📦 ARCHIVOS GENERADOS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CARACTERÍSTICAS
+---------------
+- Formulario unificado de caracterización (4 fases)
+- Sincronización automática con PostgreSQL
+- Captura de fotografías y geolocalización GPS
+- Exportación Shapefile desde la base de datos
+- Cola offline para zonas sin conectividad
+- Actualizaciones automáticas vía GitHub Releases
 
-🚀 PRODUCTION (Recomendado para distribución):
-   📁 CaracT-Movil-v1.0.apk
-   📏 Tamaño: 25 MB
-   ⚡ Optimizado con ProGuard/R8
-   🔐 Firmado para release
-   
-🔧 DEBUG (Solo para desarrollo):
-   📁 CaracT-Movil-v1.0-debug.apk
-   📏 Tamaño: 97 MB
-   🐛 Incluye símbolos de debug
-   ⚠️  No usar en producción
+REQUISITOS
+----------
+- Android 7.0 o superior
+- Cámara y GPS habilitados
+- Conexión a PostgreSQL (o cola offline hasta recuperar red)
+- Archivo .env configurado con credenciales PG_*
 
-✨ CARACTERÍSTICAS IMPLEMENTADAS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ Logo personalizado de la aplicación
-✅ Validación contra formularios duplicados
-✅ Sincronización automática de datos
-✅ Captura de imágenes y GPS
-✅ Envío por correo electrónico
-✅ Base de datos SQLite local
-✅ Interfaz optimizada para tablet
-✅ Compatibilidad Android 7.0+ (API 24)
-
-🔒 SEGURIDAD:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ APK firmado con clave de release
-✅ Código ofuscado con ProGuard
-✅ Validación de datos locales
-✅ Protección contra envíos duplicados
-
-📋 INSTALACIÓN:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+INSTALACIÓN
+-----------
 1. Habilitar "Orígenes desconocidos" en Android
-2. Transferir CaracT-Movil-v1.0.apk al dispositivo
-3. Tocar el archivo APK para instalar
-4. Aceptar permisos requeridos
+2. Transferir el APK al dispositivo
+3. Instalar y conceder permisos de cámara, ubicación y almacenamiento
+4. Configurar .env antes de compilar (ver README.md)
 
-📱 REQUISITOS MÍNIMOS:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• Android 7.0 (API nivel 24) o superior
-• 100 MB de espacio libre
-• Cámara para captura de fotos
-• GPS para ubicación
-• Conexión a internet para sincronización
-
-⚠️  NOTAS IMPORTANTES:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-• El APK no está en Google Play Store
-• Es una aplicación privada para uso interno
-• Configurar email SMTP antes del primer uso
-• Los datos se almacenan localmente hasta sincronizar
-
-🎉 ¡LISTO PARA DISTRIBUCIÓN!
+NOTAS
+-----
+- Aplicación privada para uso interno
+- Los datos se almacenan en PostgreSQL centralizado
+- Sin conexión, los formularios quedan en cola local hasta sincronizar

@@ -14,30 +14,7 @@ import '../utils/image_helper.dart';
 ///   PG_USER=usuario
 ///   PG_PASSWORD=contraseña
 ///
-/// Esquema esperado (ejecutar una sola vez en el servidor):
-/// ```sql
-/// CREATE TABLE IF NOT EXISTS surveys (
-///   id            TEXT PRIMARY KEY,
-///   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-///   form_type     TEXT NOT NULL,
-///   institution   TEXT,
-///   dane_code     TEXT,
-///   municipality  TEXT,
-///   department    TEXT,
-///   latitude      DOUBLE PRECISION,
-///   longitude     DOUBLE PRECISION,
-///   data          JSONB NOT NULL
-/// );
-/// CREATE TABLE IF NOT EXISTS inventario_mobiliario (
-///   id            TEXT PRIMARY KEY,
-///   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-///   form_type     TEXT NOT NULL,
-///   institution   TEXT,
-///   municipality  TEXT,
-///   department    TEXT,
-///   data          JSONB NOT NULL
-/// );
-/// ```
+/// Esquema esperado: ver `scripts/init_postgres.sql`
 class PostgresService {
   static Connection? _connection;
 
@@ -104,10 +81,7 @@ class PostgresService {
 
   // ─── Guardar encuesta ──────────────────────────────────────────────────────
 
-  /// Guarda [surveyData] en la tabla correcta según el tipo de formulario.
-  ///
-  /// Detecta si es "mobiliario" o "caracterización" igual que `MongoService`.
-  /// Procesa imágenes a Base64 antes de insertar.
+  /// Guarda [surveyData] en la tabla `surveys`.
   static Future<void> saveSurvey(Map<String, dynamic> surveyData) async {
     try {
       final conn = await _getConnection();
@@ -258,6 +232,16 @@ class PostgresService {
 
   // ─── Procesamiento de imágenes ─────────────────────────────────────────────
 
+  /// Campos de foto del formulario unificado (rutas locales en la raíz del JSON).
+  static const _unifiedPhotoKeys = [
+    'photoFront',
+    'photoClassroom1',
+    'photoClassroom2',
+    'photoKitchen',
+    'photoDiningRoom',
+    'photoBathroom',
+  ];
+
   /// Convierte rutas de imagen a Base64 en todas las secciones conocidas.
   static Future<void> _processImages(Map<String, dynamic> data) async {
     final inner = (data['datos'] ?? data['data']) as Map<String, dynamic>?;
@@ -267,12 +251,45 @@ class PostgresService {
       await _processPhotoSection(inner, 'photographicRecordInfo');
       await _processPhotoSection(inner, 'fotos');
       await _processPhotoSection(inner, 'photos');
+      await _processFlatPhotoFields(inner);
     } else {
-      // Estructura plana
       await _processPhotoSection(data, 'infoRegistroFotografico');
       await _processPhotoSection(data, 'photographicRecordInfo');
       await _processPhotoSection(data, 'fotos');
       await _processPhotoSection(data, 'photos');
+    }
+
+    // Formulario unificado: fotos en campos planos en la raíz del JSON
+    await _processFlatPhotoFields(data);
+  }
+
+  /// Convierte campos de foto planos (formulario unificado) a objetos Base64.
+  static Future<void> _processFlatPhotoFields(Map<String, dynamic> parent) async {
+    for (final key in _unifiedPhotoKeys) {
+      final path = parent[key];
+      if (path == null) continue;
+
+      // Ya procesado en un envío anterior
+      if (path is Map) continue;
+
+      if (path is String && path.isNotEmpty) {
+        parent[key] = await _pathToImageObject(path);
+      }
+    }
+  }
+
+  static Future<Map<String, dynamic>> _pathToImageObject(String path) async {
+    try {
+      final base64 = await ImageHelper.processImageForDb(path);
+      return base64 != null
+          ? {
+              'fileName': path.split('/').last,
+              'imagedata': base64,
+              'contentType': 'image/jpeg',
+            }
+          : {'error': 'Imagen no encontrada', 'originalPath': path};
+    } catch (e) {
+      return {'error': 'Error procesando: $e', 'originalPath': path};
     }
   }
 
@@ -292,21 +309,7 @@ class PostgresService {
         continue;
       }
       if (path is String && path.isNotEmpty) {
-        try {
-          final base64 = await ImageHelper.processImageForDb(path);
-          processed[entry.key] = base64 != null
-              ? {
-                  'fileName': path.split('/').last,
-                  'imagedata': base64,
-                  'contentType': 'image/jpeg',
-                }
-              : {'error': 'Imagen no encontrada', 'originalPath': path};
-        } catch (e) {
-          processed[entry.key] = {
-            'error': 'Error procesando: $e',
-            'originalPath': path,
-          };
-        }
+        processed[entry.key] = await _pathToImageObject(path);
       } else {
         processed[entry.key] = path;
       }
@@ -317,13 +320,9 @@ class PostgresService {
 
   // ─── Consulta para exportación ─────────────────────────────────────────────
 
-  /// Retorna todos los registros de la tabla `surveys` con los campos
-  /// necesarios para la exportación a Shapefile (sin imágenes Base64).
+  /// Retorna todos los registros de `surveys` con coordenadas para Shapefile.
   ///
-  /// Cada mapa contiene las claves:
-  ///   institution, dane_code, municipality, department,
-  ///   latitude, longitude, principal_name, survey_date,
-  ///   total_students, teachers_count, has_electricity, access_route
+  /// Cada mapa incluye columnas de tabla + `data` (JSON del formulario completo).
   static Future<List<Map<String, dynamic>>> querySurveysForExport() async {
     try {
       final conn = await _getConnection();
@@ -331,18 +330,16 @@ class PostgresService {
       final result = await conn.execute(
         r'''
         SELECT
+          id,
+          created_at,
+          form_type,
           institution,
           dane_code,
           municipality,
           department,
           latitude,
           longitude,
-          data->'institutionalInfo'->>'principalName' AS principal_name,
-          data->'generalInfo'->>'date'               AS survey_date,
-          data->'coverageInfo'->>'totalStudents'      AS total_students,
-          data->'coverageInfo'->>'teachersCount'      AS teachers_count,
-          data->'electricityInfo'->>'hasElectricService' AS has_electricity,
-          data->'accessRouteInfo'->>'principalRoute'  AS access_route
+          data
         FROM surveys
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
         ORDER BY institution
@@ -352,19 +349,30 @@ class PostgresService {
       final rows = <Map<String, dynamic>>[];
       for (final row in result) {
         final cols = row.toColumnMap();
+        final rawData = cols['data'];
+        Map<String, dynamic> data;
+        if (rawData is Map<String, dynamic>) {
+          data = rawData;
+        } else if (rawData is String) {
+          data = json.decode(rawData) as Map<String, dynamic>;
+        } else {
+          data = {};
+        }
+
+        final createdAt = cols['created_at'];
         rows.add({
-          'institution': cols['institution'] ?? '',
-          'dane_code': cols['dane_code'] ?? '',
-          'municipality': cols['municipality'] ?? '',
-          'department': cols['department'] ?? '',
+          'id': cols['id']?.toString() ?? '',
+          'created_at': createdAt is DateTime
+              ? createdAt.toIso8601String()
+              : createdAt?.toString() ?? '',
+          'form_type': cols['form_type']?.toString() ?? '',
+          'institution': cols['institution']?.toString() ?? '',
+          'dane_code': cols['dane_code']?.toString() ?? '',
+          'municipality': cols['municipality']?.toString() ?? '',
+          'department': cols['department']?.toString() ?? '',
           'latitude': (cols['latitude'] as num?)?.toDouble() ?? 0.0,
           'longitude': (cols['longitude'] as num?)?.toDouble() ?? 0.0,
-          'principal_name': cols['principal_name'] ?? '',
-          'survey_date': cols['survey_date'] ?? '',
-          'total_students': int.tryParse(cols['total_students']?.toString() ?? '0') ?? 0,
-          'teachers_count': int.tryParse(cols['teachers_count']?.toString() ?? '0') ?? 0,
-          'has_electricity': cols['has_electricity']?.toString() == 'true',
-          'access_route': cols['access_route'] ?? '',
+          'data': data,
         });
       }
 

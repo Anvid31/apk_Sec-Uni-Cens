@@ -208,7 +208,9 @@ class UpdateService {
     // Solo tomar la parte antes de '+' (build number)
     final clean = version.split('+').first;
     final parts = clean.split('.').map((p) => int.tryParse(p) ?? 0).toList();
-    while (parts.length < 3) parts.add(0);
+    while (parts.length < 3) {
+      parts.add(0);
+    }
     return parts;
   }
 }

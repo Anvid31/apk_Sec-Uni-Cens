@@ -1,0 +1,40 @@
+# Base de datos local de pruebas para CaracT Móvil / CENS
+#
+# Iniciar:  docker compose -f docker-compose.db.yml up -d
+# Detener:  docker compose -f docker-compose.db.yml down
+# Ver logs: docker compose -f docker-compose.db.yml logs -f postgres
+#
+# Adminer (ver datos en navegador): http://localhost:8081
+#   Sistema: PostgreSQL | Servidor: postgres | Usuario/DB: ver .env
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cens-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: caracterizacion_cens
+      POSTGRES_USER: caract_user
+      POSTGRES_PASSWORD: caract_dev_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - cens_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caract_user -d caracterizacion_cens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:4
+    container_name: cens-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  cens_pgdata:

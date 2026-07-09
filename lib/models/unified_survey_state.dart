@@ -303,7 +303,9 @@ class UnifiedSurveyState extends ChangeNotifier {
     tieneOtrosEspacios = null; cantidadOtrosEspacios = null;
     estadoOtrosEspacios = null; descripcionOtrosEspacios = null;
     // Fase 2 — Mobiliario
-    for (final item in mobiliarioItems.values) item.reset();
+    for (final item in mobiliarioItems.values) {
+      item.reset();
+    }
     // Fase 2 — Dotación Especial
     dotTieneCocina = null;
     dotNecesidadesMobiliarioCocina = null;
@@ -314,7 +316,9 @@ class UnifiedSurveyState extends ChangeNotifier {
     tieneEnergiaElectrica = null;
     fuenteEnergia = null;
     numeroCLientesCENS = null;
-    for (final item in electrodomesticos.values) item.reset();
+    for (final item in electrodomesticos.values) {
+      item.reset();
+    }
     otrosElectrodomesticos = null;
     // Fase 4 — Agua
     tieneAccesoAgua = null;

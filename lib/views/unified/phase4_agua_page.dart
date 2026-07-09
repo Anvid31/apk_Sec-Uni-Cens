@@ -5,7 +5,7 @@ import '../../models/unified_survey_state.dart';
 import '../../widgets/layout/enhanced_form_container.dart';
 import '../../utils/form_navigator.dart';
 import '../../config/theme.dart';
-import '../../services/postgres_service.dart';
+import '../../services/unified_submission_service.dart';
 
 class Phase4AguaPage extends StatefulWidget {
   const Phase4AguaPage({super.key});
@@ -215,7 +215,9 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
       _cantHidratCtrl, _totalSanitCtrl, _cantNinasCtrl, _cantNinosCtrl,
       _totalFuncionanCtrl, _cantDiscapCtrl, _cantPrimerInfCtrl,
       _totalLlavesCtrl, _otroRiesgoCtrl, _observacionesCtrl,
-    ]) c.dispose();
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -237,25 +239,63 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
     _s.notify();
     setState(() => _isSaving = true);
     try {
-      await PostgresService.saveSurvey(_s.toJson());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Formulario guardado correctamente.'),
-            backgroundColor: AppTheme.primaryColor,
-          ),
-        );
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      final result = await UnifiedSubmissionService.submit(_s);
+      _s.reset();
+
+      if (!mounted) return;
+
+      await _showSubmissionDialog(result);
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al guardar: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error al guardar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<void> _showSubmissionDialog(UnifiedSubmissionResult result) async {
+    final synced = result.syncedToDatabase;
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              synced ? Icons.cloud_done : Icons.cloud_upload,
+              color: synced ? AppTheme.primaryColor : Colors.orange,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                synced ? 'Formulario enviado' : 'Formulario guardado',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          synced
+              ? 'La información se guardó en la base de datos correctamente.'
+              : 'La información quedó guardada en este dispositivo. '
+                  'Se enviará automáticamente a la base de datos cuando haya conexión.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -277,7 +317,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           // ═══════════════════════════════════════════════════
           //  AGUA
           // ═══════════════════════════════════════════════════
-          _SectionHeader('AGUA'),
+          const _SectionHeader('AGUA'),
           const SizedBox(height: 12),
 
           _buildYesNo('¿El establecimiento educativo tiene acceso a agua?',
@@ -359,7 +399,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           // ═══════════════════════════════════════════════════
           //  SANEAMIENTO
           // ═══════════════════════════════════════════════════
-          _SectionHeader('SANEAMIENTO'),
+          const _SectionHeader('SANEAMIENTO'),
           const SizedBox(height: 12),
 
           _buildRadioList(
@@ -445,7 +485,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           // ═══════════════════════════════════════════════════
           //  HIGIENE
           // ═══════════════════════════════════════════════════
-          _SectionHeader('HIGIENE'),
+          const _SectionHeader('HIGIENE'),
           const SizedBox(height: 12),
 
           _buildMultiCheck('¿Con qué tipo de sistema de lavado de manos cuenta?',
@@ -508,7 +548,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           // ═══════════════════════════════════════════════════
           //  RIESGOS Y OBSERVACIONES
           // ═══════════════════════════════════════════════════
-          _SectionHeader('Riesgos y Observaciones'),
+          const _SectionHeader('Riesgos y Observaciones'),
           const SizedBox(height: 12),
 
           _buildMultiCheck(

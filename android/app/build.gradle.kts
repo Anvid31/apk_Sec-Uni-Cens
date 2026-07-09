@@ -35,7 +35,7 @@ android {
         applicationId = "com.example.caracterizacion_cens"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21  // Aumentado para compatibilidad con image_picker
+        minSdk = flutter.minSdkVersion  // Aumentado para compatibilidad con image_picker
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -49,19 +49,24 @@ android {
         getByName("debug") {
             // Usar la firma de debug estándar
         }
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
         }
     }
 
     buildTypes {
         release {
-            // Usar firma real para distribución
-            signingConfig = signingConfigs.getByName("release")
-            
+            // Usar firma real para distribución si key.properties existe, si no usar debug
+            signingConfig = if (keystorePropertiesFile.exists())
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
+
             // Optimizaciones para el APK de release
             isMinifyEnabled = true
             isShrinkResources = true

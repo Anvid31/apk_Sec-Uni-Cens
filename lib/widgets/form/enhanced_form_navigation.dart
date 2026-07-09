@@ -25,7 +25,7 @@ class EnhancedFormNavigationButtons extends StatefulWidget {
     this.isLoading = false,
     this.isLastStep = false,
     this.currentStep = 1,
-    this.totalSteps = 9,
+    this.totalSteps = 4,
     this.nextIcon,
     this.previousIcon,
   });

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../form/enhanced_form_navigation.dart';
@@ -31,7 +33,7 @@ class EnhancedFormContainer extends StatefulWidget {
     required this.title,
     this.subtitle,
     required this.currentStep,
-    this.totalSteps = 9,
+    this.totalSteps = 4,
     required this.child,
     this.onPrevious,
     this.onNext,
@@ -65,11 +67,13 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
   late Animation<Offset> _contentSlideAnimation;
   late Animation<double> _collapseAnimation;
   bool _headerCollapsed = false;
+  Timer? _focusScrollTimer;
 
   @override
   void initState() {
     super.initState();
-    
+    FocusManager.instance.addListener(_scrollFocusedFieldIntoView);
+
     _headerController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -133,8 +137,27 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     }
   }
 
+  void _scrollFocusedFieldIntoView() {
+    _focusScrollTimer?.cancel();
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null || !focus.hasFocus) return;
+
+    _focusScrollTimer = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      final ctx = FocusManager.instance.primaryFocus?.context;
+      if (ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: Duration.zero,
+        alignment: 0.15,
+      );
+    });
+  }
+
   @override
   void dispose() {
+    FocusManager.instance.removeListener(_scrollFocusedFieldIntoView);
+    _focusScrollTimer?.cancel();
     _headerController.dispose();
     _contentController.dispose();
     _collapseController.dispose();
@@ -147,6 +170,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
+      resizeToAvoidBottomInset: false,
       body: Column(
         children: [
           // Header animado mejorado
@@ -364,7 +388,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
               AnimatedContainer(
                 duration: const Duration(milliseconds: 800),
                 curve: Curves.easeInOutCubic,
-                width: MediaQuery.of(context).size.width * progress,
+                width: MediaQuery.sizeOf(context).width * progress,
                 height: 6,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -449,7 +473,10 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                           )
                         : SingleChildScrollView(
                             physics: const ClampingScrollPhysics(),
-                            padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: widget.contentPadding ??
+                                const EdgeInsets.fromLTRB(24, 16, 24, 0),
                             child: widget.child,
                           ),
                   ),
@@ -463,6 +490,8 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
   }
 
   Widget _buildDragHandle() {
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return GestureDetector(
       onTap: _toggleHeader,
       onVerticalDragEnd: (details) {
@@ -471,33 +500,74 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
         if (v > 300 && _headerCollapsed) _toggleHeader();
       },
       behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
         width: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(32),
-            topRight: Radius.circular(32),
+            topLeft: Radius.circular(_headerCollapsed ? 0 : 32),
+            topRight: Radius.circular(_headerCollapsed ? 0 : 32),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x1A000000),
-              offset: Offset(0, -8),
-              blurRadius: 32,
-              spreadRadius: 0,
-            ),
-          ],
+          boxShadow: _headerCollapsed
+              ? const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    offset: Offset(0, 2),
+                    blurRadius: 8,
+                  ),
+                ]
+              : const [
+                  BoxShadow(
+                    color: Color(0x1A000000),
+                    offset: Offset(0, -8),
+                    blurRadius: 32,
+                    spreadRadius: 0,
+                  ),
+                ],
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Center(
-          child: Container(
-            width: 40,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
+        // Cuando el header está colapsado, respetar notch / barra de estado
+        padding: EdgeInsets.only(
+          top: _headerCollapsed ? topInset + 8 : 10,
+          bottom: _headerCollapsed ? 12 : 10,
+          left: 16,
+          right: 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
+            if (_headerCollapsed) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                    color: _primaryColor.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Mostrar encabezado',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
     );

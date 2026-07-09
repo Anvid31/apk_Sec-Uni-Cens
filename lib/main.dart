@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'models/survey_state.dart';
-import 'models/furniture_survey_state.dart';
 import 'models/unified_survey_state.dart';
 import 'views/selection_page.dart'; // Cambio: Importamos SelectionPage
 import 'config/theme.dart';
@@ -19,7 +17,7 @@ void main() async {
     await dotenv.load(fileName: ".env");
     print('✅ Archivo .env cargado exitosamente');
   } catch (e) {
-    print('⚠️ Error al cargar .env: $e - La app funcionará sin configuración de correo');
+    print('⚠️ Error al cargar .env: $e - La app funcionará sin configuración de base de datos');
   }
   
   // Inicialización robusta sin dependencias críticas
@@ -59,8 +57,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SurveyState()),
-        ChangeNotifierProvider(create: (_) => FurnitureSurveyState()),
         ChangeNotifierProvider(create: (_) => UnifiedSurveyState()),
       ],
       child: const MyApp(),

@@ -106,7 +106,9 @@ class _Phase2DotacionPageState extends State<Phase2DotacionPage> {
     _estadoOtrosEspaciosCtrl.dispose();
     _descOtrosEspaciosCtrl.dispose();
     for (final ctrls in _mobCtrl.values) {
-      for (final c in ctrls.values) c.dispose();
+      for (final c in ctrls.values) {
+        c.dispose();
+      }
     }
     _dotNecMobCocinaCtrl.dispose();
     _dotNecUtensiliosCocinaCtrl.dispose();
@@ -173,7 +175,7 @@ class _Phase2DotacionPageState extends State<Phase2DotacionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─── Servicios Públicos ───────────────────────────────
-          _SectionHeader('Servicios Públicos'),
+          const _SectionHeader('Servicios Públicos'),
           const SizedBox(height: 12),
           _buildYesNo(
             label: '¿Tiene gas?',
@@ -205,7 +207,7 @@ class _Phase2DotacionPageState extends State<Phase2DotacionPage> {
           const SizedBox(height: 20),
 
           // ─── Infraestructura — Espacios ───────────────────────
-          _SectionHeader('Infraestructura — Espacios'),
+          const _SectionHeader('Infraestructura — Espacios'),
           const SizedBox(height: 12),
           _buildSpaceSection(
             label: '¿Tiene salones?',
@@ -278,7 +280,7 @@ class _Phase2DotacionPageState extends State<Phase2DotacionPage> {
           const SizedBox(height: 20),
 
           // ─── Ítems de Mobiliario ──────────────────────────────
-          _SectionHeader('Ítems de Mobiliario'),
+          const _SectionHeader('Ítems de Mobiliario'),
           const SizedBox(height: 8),
           _buildNoteCard(
               'No es un inventario, diligenciar información de las necesidades actuales de la sede educativa.'),
@@ -288,7 +290,7 @@ class _Phase2DotacionPageState extends State<Phase2DotacionPage> {
           const SizedBox(height: 20),
 
           // ─── Dotación Especial ────────────────────────────────
-          _SectionHeader('Dotación Especial'),
+          const _SectionHeader('Dotación Especial'),
           const SizedBox(height: 8),
           _buildNoteCard(
               'No es un inventario, diligenciar información de las necesidades actuales de la sede educativa.'),

@@ -4,9 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
-import '../models/survey_state.dart';
 import 'notification_service.dart';
 import 'postgres_service.dart';
+
+/// Resultado al encolar / enviar una encuesta.
+class SyncEnqueueResult {
+  final String surveyId;
+  /// Encuesta confirmada en PostgreSQL y retirada de la cola local.
+  final bool synced;
+
+  const SyncEnqueueResult({required this.surveyId, required this.synced});
+}
 
 /// Servicio de sincronización automática simplificado y compatible
 /// 
@@ -42,39 +50,58 @@ class AutoSyncService {
     }
   }
 
-  /// Programa una encuesta para envío inmediato
-  static Future<void> scheduleImmediateSync(Map<String, dynamic> surveyData) async {
+  /// Encola la encuesta localmente e intenta enviarla de inmediato si hay red.
+  ///
+  /// La encuesta solo se elimina de la cola local tras confirmación en PostgreSQL.
+  static Future<SyncEnqueueResult> scheduleImmediateSync(
+    Map<String, dynamic> surveyData,
+  ) async {
     try {
-      // Asignar ID único y timestamp
-      final surveyId = surveyData['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-      
-      // VALIDACIÓN ANTI-DUPLICADOS: Verificar si ya existe una encuesta con los mismos datos
+      final surveyId =
+          surveyData['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+
       if (await _isDuplicateSurvey(surveyData)) {
-        if (kDebugMode) print('⚠️ Encuesta duplicada detectada, evitando envío múltiple');
-        throw Exception('Esta encuesta ya ha sido enviada o está en proceso de envío');
+        if (kDebugMode) {
+          print('⚠️ Encuesta duplicada detectada, evitando envío múltiple');
+        }
+        throw Exception(
+          'Esta encuesta ya ha sido enviada o está en proceso de envío',
+        );
       }
-      
+
       surveyData['id'] = surveyId;
       surveyData['timestamp'] = DateTime.now().toIso8601String();
       surveyData['syncStatus'] = 'pending';
       surveyData['attempts'] = 0;
       surveyData['priority'] = 'high';
-      
-      // Guardar en almacenamiento persistente
+
       await _savePendingSurvey(surveyData);
-      
-      // Intentar envío inmediato si hay conectividad
+
+      var synced = false;
       if (await _hasInternetConnection()) {
-        // Usar Future.microtask para no bloquear la UI
-        Future.microtask(() => _processPendingSurveys());
+        try {
+          await _sendSurvey(surveyData);
+          await _markSurveyAsSynced(surveyId);
+          synced = true;
+        } catch (e) {
+          print('⚠️ Envío inmediato falló, encuesta permanece en cola: $e');
+          await _persistPendingSurveys(await _getPendingSurveys());
+        }
       }
-      
-      print('📤 Encuesta programada para envío automático');
+
+      print(synced
+          ? '✅ Encuesta $surveyId enviada a PostgreSQL'
+          : '📤 Encuesta $surveyId guardada en cola local');
+
+      return SyncEnqueueResult(surveyId: surveyId, synced: synced);
     } catch (e) {
       print('❌ Error programando sincronización: $e');
       rethrow;
     }
   }
+
+  /// Indica si hay conectividad a internet (ping real).
+  static Future<bool> hasInternetConnection() => _hasInternetConnection();
 
   /// Inicia el monitoreo de conectividad mejorado
   static Future<void> _startConnectivityMonitoring() async {
@@ -321,26 +348,34 @@ class AutoSyncService {
 
       int successCount = 0;
       int failureCount = 0;
+      final stillPending = <Map<String, dynamic>>[];
 
       for (var surveyData in pendingSurveys) {
         try {
           await _sendSurvey(surveyData);
-          await _markSurveyAsSynced(surveyData['id']);
+          await _markSurveyAsSent(surveyData);
           successCount++;
           print('✅ Encuesta ${surveyData['id']} enviada exitosamente');
         } catch (e) {
           failureCount++;
           print('❌ Error enviando encuesta ${surveyData['id']}: $e');
-          
-          // Incrementar contador de intentos
+
           surveyData['attempts'] = (surveyData['attempts'] ?? 0) + 1;
-          
-          // Si ha fallado muchas veces, marcar como error
+
           if (surveyData['attempts'] >= 3) {
             surveyData['syncStatus'] = 'error';
             surveyData['lastError'] = e.toString();
           }
+          stillPending.add(surveyData);
         }
+      }
+
+      await _persistPendingSurveys(stillPending);
+
+      if (successCount > 0) {
+        await _updateSyncStatus({
+          'lastSuccessfulSync': DateTime.now().toIso8601String(),
+        });
       }
 
       // Actualizar estado final
@@ -364,80 +399,80 @@ class AutoSyncService {
   static Future<void> _sendSurvey(Map<String, dynamic> surveyData) async {
     try {
       print('📤 Enviando encuesta: ${surveyData['id']}');
-      
-      // Guardar en PostgreSQL
-      await PostgresService.saveSurvey(surveyData);
 
-      /* Lógica de Email Anterior (Comentada)
-      // Verificar configuración de email
-      if (!EmailService.isEmailConfigured()) {
-        throw Exception('Configuración de correo incompleta. Configure el correo en el archivo .env');
-      }
-      
-      // Convertir datos JSON a SurveyState
-      final surveyState = _createSurveyStateFromJson(surveyData);
-      
-      // Crear archivo ZIP con CSV y fotos
-      final zipFile = await ZipExportService.createZipFile(surveyState);
-      
-      if (zipFile == null) {
-        throw Exception('Error creando archivo ZIP con fotos');
-      }
-      
-      // Enviar ZIP por email
-      final success = await EmailService.sendSurveyQuick(zipFile, surveyState);
-      
-      if (!success) {
-        throw Exception('Error enviando email con ZIP');
-      }
-      
-      // Limpiar archivo ZIP temporal
-      try {
-        await zipFile.delete();
-      } catch (e) {
-        print('⚠️ Error eliminando archivo ZIP temporal: $e');
-      }
-      */
-      
-      // Enviar notificación push de éxito
-      try {
-        // Obtenemos el nombre de la institución del mapa directamente
-        Map<String, dynamic>? institutionalInfo;
-        
-        if (surveyData['datos'] != null && surveyData['datos']['informacionInstitucional'] != null) {
-           institutionalInfo = surveyData['datos']['informacionInstitucional'] as Map<String, dynamic>;
-        } else if (surveyData['data'] != null && surveyData['data']['institutionalInfo'] != null) {
-           institutionalInfo = surveyData['data']['institutionalInfo'] as Map<String, dynamic>;
-        } else {
-           institutionalInfo = (surveyData['institutionalInfo'] as Map<String, dynamic>?);
-        }
+      final payload = _payloadForPostgres(surveyData);
+      await PostgresService.saveSurvey(payload);
 
-        final institutionName = institutionalInfo?['institutionName'] 
-                             ?? institutionalInfo?['nombreInstitucion'] 
-                             ?? surveyData['nombreInstitucion']
-                             ?? surveyData['institutionName'] 
-                             ?? 'Institución';
-        
+      try {
         await NotificationService.showFormSubmittedNotification(
-          institutionName: institutionName
+          institutionName: _institutionName(surveyData),
         );
       } catch (notificationError) {
         print('⚠️ Error enviando notificación push: $notificationError');
-        // No detener el proceso por errores de notificación
       }
-      
+
       print('✅ Encuesta enviada exitosamente a PostgreSQL');
     } catch (e) {
       print('❌ Error enviando encuesta: $e');
       rethrow;
     }
   }
-  
-  /// Crea un SurveyState a partir de datos JSON
-  static SurveyState _createSurveyStateFromJson(Map<String, dynamic> jsonData) {
-    return SurveyState.fromJson(jsonData);
+
+  static Future<void> _persistPendingSurveys(
+    List<Map<String, dynamic>> pendingSurveys,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_pendingSurveysKey, jsonEncode(pendingSurveys));
+      await _updateSyncStatus({
+        'pendingCount': pendingSurveys.length,
+        'lastUpdate': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print('❌ Error persistiendo cola de encuestas: $e');
+    }
   }
 
+  /// Elimina metadatos de sincronización antes de guardar en PostgreSQL.
+  static Map<String, dynamic> _payloadForPostgres(
+    Map<String, dynamic> surveyData,
+  ) {
+    final copy = Map<String, dynamic>.from(surveyData);
+    for (final key in ['syncStatus', 'attempts', 'priority', 'lastError']) {
+      copy.remove(key);
+    }
+    return copy;
+  }
+
+  /// Nombre de institución/sede para notificaciones (unificado y legacy).
+  static String _institutionName(Map<String, dynamic> surveyData) {
+    final payload = _surveyPayload(surveyData);
+    if (payload == null) return 'Institución';
+
+    final institutionalInfo = payload['institutionalInfo'] as Map<String, dynamic>?;
+    final informacionInstitucional =
+        payload['informacionInstitucional'] as Map<String, dynamic>?;
+
+    return payload['schoolName'] as String? ??
+        payload['principalInstitution'] as String? ??
+        institutionalInfo?['institutionName'] as String? ??
+        informacionInstitucional?['nombreInstitucion'] as String? ??
+        surveyData['institutionName'] as String? ??
+        'Institución';
+  }
+
+  /// Extrae el cuerpo de la encuesta (sin envoltorio legacy `data`/`datos`).
+  static Map<String, dynamic>? _surveyPayload(Map<String, dynamic> surveyData) {
+    final nested = surveyData['data'] ?? surveyData['datos'];
+    if (nested is Map<String, dynamic>) return nested;
+    if (surveyData['formType'] == 'unified') return surveyData;
+    if (surveyData.containsKey('schoolName') ||
+        surveyData.containsKey('institutionalInfo')) {
+      return surveyData;
+    }
+    return null;
+  }
+  
   /// Limpia todas las encuestas pendientes (para pruebas)
   static Future<void> clearPendingSurveys() async {
     try {
@@ -474,44 +509,38 @@ class AutoSyncService {
   /// Verifica si una encuesta es duplicada basándose en datos clave
   static Future<bool> _isDuplicateSurvey(Map<String, dynamic> newSurveyData) async {
     try {
+      final newPayload = _surveyPayload(newSurveyData);
+      if (newPayload == null) return false;
+
+      final newSignature = _createSurveySignature(newPayload);
       final pendingSurveys = await _getPendingSurveys();
-      final newData = newSurveyData['data'] as Map<String, dynamic>?;
-      
-      if (newData == null) return false;
-      
-      // Crear firma única más robusta
-      final newSignature = _createSurveySignature(newData);
-      
-      // Verificar contra encuestas pendientes con ventana de tiempo más amplia
+
       for (var survey in pendingSurveys) {
-        final existingData = survey['data'] as Map<String, dynamic>?;
-        if (existingData != null) {
-          final existingSignature = _createSurveySignature(existingData);
-          
-          if (newSignature == existingSignature) {
-            final existingTimestamp = DateTime.tryParse(survey['timestamp'] ?? '');
-            if (existingTimestamp != null) {
-              final timeDifference = DateTime.now().difference(existingTimestamp);
-              
-              // Aumentar ventana de detección a 2 horas
-              if (timeDifference.inHours < 2) {
-                print('🔍 Encuesta duplicada detectada - misma institución en las últimas 2 horas');
-                return true;
-              }
-            }
+        final existingPayload = _surveyPayload(survey);
+        if (existingPayload == null) continue;
+
+        if (_createSurveySignature(existingPayload) != newSignature) continue;
+
+        final existingTimestamp = DateTime.tryParse(survey['timestamp'] ?? '');
+        if (existingTimestamp != null) {
+          final timeDifference = DateTime.now().difference(existingTimestamp);
+          if (timeDifference.inHours < 2) {
+            print(
+              '🔍 Encuesta duplicada detectada - misma sede en las últimas 2 horas',
+            );
+            return true;
           }
         }
       }
 
-      // Verificar contra encuestas ya enviadas
       final prefs = await SharedPreferences.getInstance();
       final sentSurveys = prefs.getStringList('sent_surveys_signatures') ?? [];
-      
+
       if (sentSurveys.contains(newSignature)) {
         print('🔍 Encuesta duplicada detectada - ya fue enviada anteriormente');
         return true;
       }
-      
+
       return false;
     } catch (e) {
       print('❌ Error verificando duplicados: $e');
@@ -519,24 +548,32 @@ class AutoSyncService {
     }
   }
 
-  /// Crea una firma única para identificar encuestas
+  /// Crea una firma única para identificar encuestas (unificado y legacy).
   static String _createSurveySignature(Map<String, dynamic> surveyData) {
     try {
       final generalInfo = surveyData['generalInfo'] as Map<String, dynamic>?;
-      final institutionalInfo = surveyData['institutionalInfo'] as Map<String, dynamic>?;
-      
-      // Combinar datos únicos de la institución
-      final institutionName = institutionalInfo?['institutionName'] ?? '';
-      final municipality = generalInfo?['municipality'] ?? '';
-      final village = generalInfo?['village'] ?? '';
-      final contact = generalInfo?['contact'] ?? '';
-      
-      // Crear hash simple pero efectivo
-      final signature = '$institutionName|$municipality|$village|$contact'.toLowerCase();
-      return signature.replaceAll(RegExp(r'\s+'), ''); // Remover espacios
+      final institutionalInfo =
+          surveyData['institutionalInfo'] as Map<String, dynamic>?;
+
+      final schoolName = surveyData['schoolName'] as String? ??
+          institutionalInfo?['institutionName'] as String? ??
+          '';
+      final municipality = surveyData['municipality'] as String? ??
+          generalInfo?['municipality'] as String? ??
+          '';
+      final daneCode = surveyData['daneCode'] as String? ??
+          institutionalInfo?['dane'] as String? ??
+          '';
+      final surveyDate = surveyData['date']?.toString() ??
+          generalInfo?['date']?.toString() ??
+          '';
+
+      final signature =
+          '$schoolName|$municipality|$daneCode|$surveyDate'.toLowerCase();
+      return signature.replaceAll(RegExp(r'\s+'), '');
     } catch (e) {
       print('❌ Error creando firma: $e');
-      return DateTime.now().millisecondsSinceEpoch.toString(); // Fallback único
+      return DateTime.now().millisecondsSinceEpoch.toString();
     }
   }
 
@@ -545,23 +582,21 @@ class AutoSyncService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final sentSurveys = prefs.getStringList('sent_surveys_signatures') ?? [];
-      
-      final data = surveyData['data'] as Map<String, dynamic>?;
-      if (data != null) {
-        final signature = _createSurveySignature(data);
-        
-        // Agregar a la lista de enviadas
-        if (!sentSurveys.contains(signature)) {
-          sentSurveys.add(signature);
-          
-          // Mantener solo las últimas 50 firmas para evitar crecimiento excesivo
-          if (sentSurveys.length > 50) {
-            sentSurveys.removeAt(0);
-          }
-          
-          await prefs.setStringList('sent_surveys_signatures', sentSurveys);
-          print('✅ Encuesta marcada como enviada exitosamente');
+
+      final payload = _surveyPayload(surveyData);
+      if (payload == null) return;
+
+      final signature = _createSurveySignature(payload);
+
+      if (!sentSurveys.contains(signature)) {
+        sentSurveys.add(signature);
+
+        if (sentSurveys.length > 50) {
+          sentSurveys.removeAt(0);
         }
+
+        await prefs.setStringList('sent_surveys_signatures', sentSurveys);
+        print('✅ Encuesta marcada como enviada exitosamente');
       }
     } catch (e) {
       print('❌ Error marcando encuesta como enviada: $e');

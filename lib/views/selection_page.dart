@@ -4,8 +4,7 @@ import '../config/theme.dart';
 import '../services/shapefile_export_service.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
-import 'survey_form_page.dart';
-import 'furniture/furniture_general_page.dart';
+import '../widgets/auto_sync_status_widget.dart';
 import 'unified/phase1_info_general_page.dart';
 
 class SelectionPage extends StatefulWidget {
@@ -126,6 +125,8 @@ class _SelectionPageState extends State<SelectionPage> {
                   ),
                   child: Column(
                     children: [
+                      const AutoSyncStatusWidget(compact: true),
+                      const SizedBox(height: 16),
                       _buildSelectionCard(
                         context,
                         title: 'Formulario de Caracterización',

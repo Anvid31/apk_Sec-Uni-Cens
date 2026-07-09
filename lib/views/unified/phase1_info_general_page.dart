@@ -228,7 +228,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final hPad = (screenWidth * 0.03).clamp(8.0, 20.0);
     final vPad = screenWidth > 600 ? 24.0 : 16.0;
     return EnhancedFormContainer(
@@ -238,6 +238,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
       totalSteps: 4,
       showPrevious: false,
       showNavigationButtons: false,
+      customScrolling: true,
       child: Form(
         key: _formKey,
         autovalidateMode:
@@ -245,6 +246,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
         child: SingleChildScrollView(
           controller: _scrollController,
           physics: const ClampingScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(hPad, vPad, hPad, 32),
           child: Align(
             alignment: Alignment.topCenter,
@@ -355,7 +357,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'Campo requerido' : null,
                       decoration: const InputDecoration(
-                        label: Text.new('Código DANE de la sede *',
+                        label: Text('Código DANE de la sede *',
                             style: TextStyle(color: Colors.black87)),
                         hintText: 'Campo numérico libre',
                         prefixIcon: Icon(Icons.badge_outlined),
@@ -683,7 +685,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                       color: AppTheme.secondaryColor,
@@ -895,6 +897,7 @@ class _MultiSelectField extends StatelessWidget {
             final checked = selected.contains(opt);
             return CheckboxListTile(
               dense: true,
+              tileColor: Colors.transparent,
               title: Text(opt, style: const TextStyle(fontSize: 14)),
               value: checked,
               activeColor: AppTheme.primaryColor,
@@ -964,6 +967,7 @@ class _RadioSelectField extends StatelessWidget {
           ...options.map((opt) {
             return RadioListTile<String>(
               dense: true,
+              tileColor: Colors.transparent,
               title: Text(opt, style: const TextStyle(fontSize: 14)),
               value: opt,
               groupValue: selected,

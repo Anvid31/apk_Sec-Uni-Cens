@@ -4,7 +4,10 @@ import '../services/auto_sync_service.dart';
 
 /// Widget que muestra el estado de sincronización en tiempo real
 class AutoSyncStatusWidget extends StatefulWidget {
-  const AutoSyncStatusWidget({super.key});
+  /// Vista reducida para pantalla de inicio (sin botón de limpiar cola).
+  final bool compact;
+
+  const AutoSyncStatusWidget({super.key, this.compact = false});
 
   @override
   State<AutoSyncStatusWidget> createState() => _AutoSyncStatusWidgetState();
@@ -78,8 +81,32 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
             _buildHeader(),
             const SizedBox(height: 16),
             _buildStatusInfo(),
-            const SizedBox(height: 16),
-            _buildActionButtons(),
+            if (!widget.compact) ...[
+              const SizedBox(height: 16),
+              _buildActionButtons(),
+            ] else if ((_syncStatus['pendingCount'] ?? 0) > 0) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    setState(() => _isLoading = true);
+                    try {
+                      await AutoSyncService.forceSyncNow();
+                      await _updateStatus();
+                    } finally {
+                      if (mounted) setState(() => _isLoading = false);
+                    }
+                  },
+                  icon: const Icon(Icons.sync, size: 16),
+                  label: const Text('Sincronizar ahora'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

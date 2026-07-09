@@ -43,8 +43,9 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
     for (final item in UnifiedSurveyState.electrodomesticosList) {
       final key = item['key']!;
       final ed = _state.electrodomesticos[key];
-      _cantCtrl[key] =
-          TextEditingController(text: ed?.cantidad?.toString() ?? '');
+      _cantCtrl[key] = TextEditingController(
+        text: ed?.cantidad?.toString() ?? '',
+      );
     }
   }
 
@@ -52,7 +53,9 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
   void dispose() {
     _numeroCLienteCtrl.dispose();
     _otrosElectroCtrl.dispose();
-    for (final c in _cantCtrl.values) c.dispose();
+    for (final c in _cantCtrl.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -81,7 +84,10 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
     _saveToState();
     _state.notify();
     FormNavigator.pushReplacementForm(
-        context, const Phase4AguaPage(), stepNumber: 4);
+      context,
+      const Phase4AguaPage(),
+      stepNumber: 4,
+    );
   }
 
   @override
@@ -99,30 +105,31 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─── Servicios Públicos ───────────────────────────────
-          _SectionHeader('Servicios Públicos'),
+          const _SectionHeader('Servicios Públicos'),
           const SizedBox(height: 12),
           _buildYesNo(
             label: '¿Tiene energía eléctrica?',
             value: _state.tieneEnergiaElectrica,
-            onChanged: (v) =>
-                setState(() => _state.tieneEnergiaElectrica = v),
+            onChanged: (v) => setState(() => _state.tieneEnergiaElectrica = v),
           ),
           if (_state.tieneEnergiaElectrica == true) ...[
             const SizedBox(height: 16),
-            Text('Fuente de energía (Única opción)',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text(
+              'Fuente de energía (Única opción)',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 6),
-            ..._fuentesEnergia.map((opt) => RadioListTile<String>(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  value: opt,
-                  groupValue: _state.fuenteEnergia,
-                  title: Text(opt, style: const TextStyle(fontSize: 14)),
-                  activeColor: _green,
-                  onChanged: (v) =>
-                      setState(() => _state.fuenteEnergia = v),
-                )),
+            ..._fuentesEnergia.map(
+              (opt) => RadioListTile<String>(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                value: opt,
+                groupValue: _state.fuenteEnergia,
+                title: Text(opt, style: const TextStyle(fontSize: 14)),
+                activeColor: _green,
+                onChanged: (v) => setState(() => _state.fuenteEnergia = v),
+              ),
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _numeroCLienteCtrl,
@@ -130,25 +137,30 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 labelText: 'Número de cliente CENS',
-                hintText: 'Número en la factura (esquina sup. derecha amarilla)',
+                hintText:
+                    'Número en la factura (esquina sup. derecha amarilla)',
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
           const SizedBox(height: 20),
 
           // ─── Electrodomésticos ────────────────────────────────
-          _SectionHeader('Electrodomésticos'),
+          const _SectionHeader('Electrodomésticos'),
           const SizedBox(height: 8),
           _buildNoteCard(
-              'Para cada electrodoméstico seleccione: Sí (tiene pero sin cantidad), N° (tiene y especifique cantidad), o No (no tiene).'),
+            'Para cada electrodoméstico seleccione: Sí (tiene pero sin cantidad), N° (tiene y especifique cantidad), o No (no tiene).',
+          ),
           const SizedBox(height: 12),
-          ...UnifiedSurveyState.electrodomesticosList
-              .map((item) =>
-                  _buildElectroItem(item['key']!, item['name']!)),
+          ...UnifiedSurveyState.electrodomesticosList.map(
+            (item) => _buildElectroItem(item['key']!, item['name']!),
+          ),
           const SizedBox(height: 10),
           TextFormField(
             controller: _otrosElectroCtrl,
@@ -156,9 +168,12 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
             decoration: InputDecoration(
               labelText: 'Otros electrodomésticos (nombre + cantidad)',
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -177,9 +192,10 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontWeight: FontWeight.w500, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        ),
         const SizedBox(height: 4),
         Row(
           children: [
@@ -193,7 +209,11 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
   }
 
   Widget _radioBtn<T>(
-      String label, T opt, T? group, void Function(T) onChanged) {
+    String label,
+    T opt,
+    T? group,
+    void Function(T) onChanged,
+  ) {
     return GestureDetector(
       onTap: () => onChanged(opt),
       child: Row(
@@ -221,41 +241,56 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500, fontSize: 14)),
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          ),
           const SizedBox(height: 4),
           Row(
             children: [
-              _strRadio('Sí', 'si', ed.tiene,
-                  (v) => setState(() { ed.tiene = v; })),
+              _strRadio(
+                'Sí',
+                'si',
+                ed.tiene,
+                (v) => setState(() {
+                  ed.tiene = v;
+                  _cantCtrl[key]!.clear();
+                }),
+              ),
               const SizedBox(width: 16),
-              _strRadio('N°', 'numero', ed.tiene,
-                  (v) => setState(() { ed.tiene = v; })),
+              _strRadio(
+                'No',
+                'no',
+                ed.tiene,
+                (v) => setState(() {
+                  ed.tiene = v;
+                  _cantCtrl[key]!.clear();
+                }),
+              ),
               const SizedBox(width: 16),
-              _strRadio('No', 'no', ed.tiene,
-                  (v) => setState(() { ed.tiene = v; })),
-              if (ed.tiene == 'numero') ...[
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 80,
-                  child: TextFormField(
-                    controller: _cantCtrl[key],
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly
-                    ],
-                    decoration: InputDecoration(
-                      labelText: 'Cant.',
-                      isDense: true,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 8),
+              SizedBox(
+                width: 80,
+                child: TextFormField(
+                  controller: _cantCtrl[key],
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged:
+                      (val) => setState(() {
+                        ed.tiene = val.trim().isNotEmpty ? 'numero' : null;
+                      }),
+                  decoration: InputDecoration(
+                    labelText: 'N°',
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
                     ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
@@ -263,8 +298,12 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
     );
   }
 
-  Widget _strRadio(String label, String opt, String? group,
-      void Function(String) onChanged) {
+  Widget _strRadio(
+    String label,
+    String opt,
+    String? group,
+    void Function(String) onChanged,
+  ) {
     return GestureDetector(
       onTap: () => onChanged(opt),
       child: Row(
@@ -297,15 +336,17 @@ class _Phase3EnergiaPageState extends State<Phase3EnergiaPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline,
-              size: 16, color: Colors.orange.shade700),
+          Icon(Icons.info_outline, size: 16, color: Colors.orange.shade700),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.orange.shade900,
-                    fontWeight: FontWeight.w500)),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
