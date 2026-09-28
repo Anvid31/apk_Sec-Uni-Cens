@@ -104,6 +104,9 @@ docker run --rm -v ~/respaldo-cens/db:/db postgres:17 \
 mkdir -p ~/respaldo-vivo; rclone mount backup: ~/respaldo-vivo --read-only   # navegar
 ```
 
+Si rclone falla con `dial tcp [2001:…]:443: connect: network is unreachable`,
+la red no tiene IPv6: agrega `--bind 0.0.0.0` o, en fish, `set -Ux RCLONE_BIND 0.0.0.0`.
+
 Hazlo al menos una vez al configurar y cada pocos meses: si abre, el
 respaldo y las contraseñas funcionan. Borra `~/respaldo-cens` al terminar
 (tiene datos personales sin cifrar).
