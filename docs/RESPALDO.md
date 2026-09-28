@@ -87,6 +87,27 @@ GitHub envía un correo si una ejecución programada falla.
 
 ---
 
+## Ver el respaldo (y comprobar que sirve)
+
+En la web de Drive los archivos aparecen como `.bin`: están cifrados a
+propósito. Se ven con rclone y tus contraseñas (comandos para fish):
+
+```fish
+rclone tree backup:                                   # contenido, ya descifrado
+rclone copy backup:fotos ~/respaldo-cens/fotos        # fotos .jpg normales
+xdg-open ~/respaldo-cens/fotos
+
+rclone copy backup:db ~/respaldo-cens/db              # comprobar la base
+docker run --rm -v ~/respaldo-cens/db:/db postgres:17 \
+  pg_restore --list /db/AAAA-MM-DD/public.dump | grep "TABLE DATA"
+
+mkdir -p ~/respaldo-vivo; rclone mount backup: ~/respaldo-vivo --read-only   # navegar
+```
+
+Hazlo al menos una vez al configurar y cada pocos meses: si abre, el
+respaldo y las contraseñas funcionan. Borra `~/respaldo-cens` al terminar
+(tiene datos personales sin cifrar).
+
 ## Restaurar
 
 ```bash
