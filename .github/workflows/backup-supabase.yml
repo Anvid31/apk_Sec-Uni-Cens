@@ -1,0 +1,107 @@
+# Respaldo semanal de Supabase (plan gratuito: sin backups propios).
+#
+# - Base de datos: pg_dump de `public` (esquema + datos) y datos de auth.users.
+# - Fotos: bucket privado `fotos-encuestas`, incremental (solo baja las nuevas
+#   para no gastar egress del plan gratuito).
+# - Destino: Google Drive vía rclone, cifrado con un remote `crypt`.
+#
+# Configuración y restauración: docs/RESPALDO.md
+name: Respaldo Supabase
+
+on:
+  schedule:
+    - cron: '0 7 * * 0' # domingos 07:00 UTC (02:00 Colombia)
+  workflow_dispatch:
+
+concurrency:
+  group: backup-supabase
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RCLONE_CONFIG_TEXT: ${{ secrets.RCLONE_CONFIG }}
+      BUCKET: fotos-encuestas
+      REMOTE: backup # remote crypt definido en RCLONE_CONFIG
+      DB_RETENTION: 182d
+    steps:
+      - name: Verificar secrets
+        run: |
+          for v in SUPABASE_DB_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY RCLONE_CONFIG_TEXT; do
+            [ -n "${!v}" ] || { echo "::error::Falta el secret ${v/_TEXT/}"; exit 1; }
+          done
+
+      - name: Instalar cliente Postgres 17 y rclone
+        run: |
+          # pg_dump debe ser >= versión del servidor (Supabase: 17.x)
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+          mkdir -p ~/.config/rclone
+          printf '%s\n' "$RCLONE_CONFIG_TEXT" > ~/.config/rclone/rclone.conf
+          chmod 600 ~/.config/rclone/rclone.conf
+          rclone lsd "$REMOTE:" >/dev/null # falla temprano si el token expiró
+
+      - name: Volcar base de datos
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%Y-%m-%d)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          mkdir -p "db/$STAMP"
+          PG=/usr/lib/postgresql/17/bin
+          # Esquema + datos de la app.
+          $PG/pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --no-privileges \
+            -n public -f "db/$STAMP/public.dump"
+          # Solo datos de usuarios (el esquema auth lo crea Supabase).
+          $PG/pg_dump "$SUPABASE_DB_URL" --data-only --no-owner \
+            -t auth.users -t auth.identities -f "db/$STAMP/auth_users.sql"
+          # El volcado debe poder leerse.
+          $PG/pg_restore --list "db/$STAMP/public.dump" | grep -q 'TABLE DATA public surveys'
+          ls -la "db/$STAMP"
+
+      - name: Descargar fotos nuevas
+        run: |
+          set -euo pipefail
+          psql() { /usr/lib/postgresql/17/bin/psql "$SUPABASE_DB_URL" -Atc "$1"; }
+          psql "select name from storage.objects where bucket_id = '$BUCKET' order by name" \
+            | sort > remote.txt
+          rclone lsf "$REMOTE:fotos" -R --files-only 2>/dev/null | sort > have.txt || true
+          comm -23 remote.txt have.txt > missing.txt
+          echo "En bucket: $(wc -l < remote.txt) · ya respaldadas: $(wc -l < have.txt) · nuevas: $(wc -l < missing.txt)"
+          mkdir -p fotos
+          while IFS= read -r name; do
+            mkdir -p "fotos/$(dirname "$name")"
+            curl -fsS --retry 3 \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              "$SUPABASE_URL/storage/v1/object/$BUCKET/$name" -o "fotos/$name"
+          done < missing.txt
+
+      - name: Subir a Google Drive (cifrado)
+        run: |
+          set -euo pipefail
+          rclone copy "db/$STAMP" "$REMOTE:db/$STAMP"
+          # Las fotos no cambian: nunca se sobrescriben ni se borran del respaldo.
+          rclone copy fotos "$REMOTE:fotos" --ignore-existing
+          # Volcados de base de datos más viejos que la retención.
+          rclone delete "$REMOTE:db" --min-age "$DB_RETENTION"
+          rclone rmdirs "$REMOTE:db" --leave-root
+          rclone size "$REMOTE:"
+
+      - name: Alerta de espacio del plan gratuito
+        run: |
+          set -euo pipefail
+          read -r DB_MB FOTOS_MB < <(/usr/lib/postgresql/17/bin/psql "$SUPABASE_DB_URL" -Atc "
+            select (pg_database_size(current_database()) / 1048576)::bigint,
+                   (coalesce(sum((metadata->>'size')::bigint), 0) / 1048576)::bigint
+            from storage.objects where bucket_id = '$BUCKET'" | tr '|' ' ')
+          echo "Base de datos: ${DB_MB} MB / 500 MB · Fotos: ${FOTOS_MB} MB / 1024 MB"
+          echo "### Uso Supabase: BD ${DB_MB}/500 MB · Fotos ${FOTOS_MB}/1024 MB" >> "$GITHUB_STEP_SUMMARY"
+          [ "$DB_MB" -lt 400 ] || echo "::warning::Base de datos en ${DB_MB} MB (límite 500 MB)"
+          [ "$FOTOS_MB" -lt 800 ] || echo "::warning::Fotos en ${FOTOS_MB} MB (límite 1 GB)"
