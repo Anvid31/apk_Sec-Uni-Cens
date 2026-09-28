@@ -46,7 +46,10 @@ jobs:
           mkdir -p ~/.config/rclone
           printf '%s\n' "$RCLONE_CONFIG_TEXT" > ~/.config/rclone/rclone.conf
           chmod 600 ~/.config/rclone/rclone.conf
-          rclone lsd "$REMOTE:" >/dev/null # falla temprano si el token expiró
+          # Crea la raíz si no existe (primera vez o tras un purge) y
+          # falla temprano si el token de Drive expiró.
+          rclone mkdir "$REMOTE:"
+          rclone lsd "$REMOTE:" >/dev/null
 
       - name: Volcar base de datos
         run: |
