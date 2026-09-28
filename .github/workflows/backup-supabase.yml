@@ -77,6 +77,7 @@ jobs:
           rclone lsf "$REMOTE:fotos" -R --files-only 2>/dev/null | sort > have.txt || true
           comm -23 remote.txt have.txt > missing.txt
           echo "En bucket: $(wc -l < remote.txt) · ya respaldadas: $(wc -l < have.txt) · nuevas: $(wc -l < missing.txt)"
+          head -20 missing.txt | sed 's/^/  nueva: /'
           mkdir -p fotos
           while IFS= read -r name; do
             mkdir -p "fotos/$(dirname "$name")"
