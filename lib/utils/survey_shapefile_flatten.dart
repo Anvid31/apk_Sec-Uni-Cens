@@ -2,7 +2,7 @@ import 'dart:convert';
 
 /// Aplana el JSON de una encuesta para atributos de Shapefile (DBF).
 ///
-/// Omite fotos (Base64) y objetos anidados profundos; resume mobiliario y
+/// Omite fotos (Base64) y objetos anidados profundos; resume mobiliario ye
 /// electrodomésticos en campos de texto compactos.
 class SurveyShapefileFlatten {
   static const _reservedKeys = {
@@ -67,7 +67,23 @@ class SurveyShapefileFlatten {
 
     final electro = normalized['electrodomesticos'];
     if (electro is Map) {
-      out['ELECTRODOM'] = _truncate(_summarizeElectrodomesticos(electro), 200);
+      var summary = _summarizeElectrodomesticos(electro);
+      final otros = normalized['otrosElectrodomesticos'];
+      if (otros is List && otros.isNotEmpty) {
+        final otrosSummary = _summarizeOtrosElectrodomesticos(otros);
+        if (otrosSummary.isNotEmpty) {
+          summary = summary.isEmpty
+              ? 'otros:$otrosSummary'
+              : '$summary; otros:$otrosSummary';
+        }
+      }
+      out['ELECTRODOM'] = _truncate(summary, 200);
+    } else {
+      final otros = normalized['otrosElectrodomesticos'];
+      if (otros is List && otros.isNotEmpty) {
+        out['ELECTRODOM'] =
+            _truncate('otros:${_summarizeOtrosElectrodomesticos(otros)}', 200);
+      }
     }
 
     return out;
@@ -185,7 +201,11 @@ class SurveyShapefileFlatten {
     for (final entry in source.entries) {
       final rawKey = entry.key;
       if (_isPhotoKey(rawKey)) continue;
-      if (rawKey == 'mobiliario' || rawKey == 'electrodomesticos') continue;
+      if (rawKey == 'mobiliario' ||
+          rawKey == 'electrodomesticos' ||
+          rawKey == 'otrosElectrodomesticos') {
+        continue;
+      }
 
       final key = prefix.isEmpty ? _logicalKey(rawKey) : '${prefix}_$rawKey';
       if (_reservedKeys.contains(key)) continue;
@@ -257,9 +277,11 @@ class SurveyShapefileFlatten {
     for (final entry in mobiliario.entries) {
       if (entry.value is! Map) continue;
       final item = entry.value as Map;
-      final cant = item['cantidad'];
-      if (cant == null) continue;
-      parts.add('${entry.key}:$cant');
+      final b = item['cantBueno'];
+      final r = item['cantRegular'];
+      final m = item['cantMalo'];
+      if (b == null && r == null && m == null) continue;
+      parts.add('${entry.key}:B${b ?? 0}/R${r ?? 0}/M${m ?? 0}');
     }
     return parts.join('; ');
   }
@@ -271,7 +293,19 @@ class SurveyShapefileFlatten {
       final item = entry.value as Map;
       final tiene = item['tiene'] ?? '';
       final cant = item['cantidad'];
-      parts.add('${entry.key}:${tiene}${cant != null ? "($cant)" : ""}');
+      parts.add('${entry.key}:$tiene${cant != null ? "($cant)" : ""}');
+    }
+    return parts.join('; ');
+  }
+
+  static String _summarizeOtrosElectrodomesticos(List otros) {
+    final parts = <String>[];
+    for (final item in otros) {
+      if (item is! Map) continue;
+      final nombre = '${item['nombre'] ?? ''}'.trim();
+      if (nombre.isEmpty) continue;
+      final cant = item['cantidad'];
+      parts.add(cant != null ? '$nombre($cant)' : nombre);
     }
     return parts.join('; ');
   }

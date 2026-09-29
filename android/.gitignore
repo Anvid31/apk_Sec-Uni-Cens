@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Respaldos locales de firma (nunca a git)
+key.properties.*
+!key.properties.example
+**/*.jks.bak

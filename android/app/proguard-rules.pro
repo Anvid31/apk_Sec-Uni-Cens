@@ -1,8 +1,8 @@
 # Reglas de ProGuard para CaracT Móvil - MODO ULTRA CONSERVADOR
 
 # *** MÁXIMA PRIORIDAD: Mantener TODA la aplicación ***
--keep class com.example.caracterizacion_cens.** { *; }
--keepnames class com.example.caracterizacion_cens.** { *; }
+-keep class com.cens.caracterizacion.** { *; }
+-keepnames class com.cens.caracterizacion.** { *; }
 
 # Mantener TODAS las actividades de Android sin excepción
 -keep public class * extends android.app.Activity { *; }

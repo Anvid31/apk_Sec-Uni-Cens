@@ -5,12 +5,23 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'notification_service.dart';
-import 'postgres_service.dart';
+import 'supabase_service.dart';
 
 /// Resultado al encolar / enviar una encuesta.
+
+/// La misma encuesta (misma sede y misma fecha de creación) ya se envió o
+/// está en cola. El borrador local es una copia y puede descartarse.
+class DuplicateSurveyException implements Exception {
+  const DuplicateSurveyException();
+
+  @override
+  String toString() =>
+      'Esta encuesta ya ha sido enviada o está en proceso de envío';
+}
+
 class SyncEnqueueResult {
   final String surveyId;
-  /// Encuesta confirmada en PostgreSQL y retirada de la cola local.
+  /// Encuesta confirmada en Supabase y retirada de la cola local.
   final bool synced;
 
   const SyncEnqueueResult({required this.surveyId, required this.synced});
@@ -52,7 +63,7 @@ class AutoSyncService {
 
   /// Encola la encuesta localmente e intenta enviarla de inmediato si hay red.
   ///
-  /// La encuesta solo se elimina de la cola local tras confirmación en PostgreSQL.
+  /// La encuesta solo se elimina de la cola local tras confirmación en Supabase.
   static Future<SyncEnqueueResult> scheduleImmediateSync(
     Map<String, dynamic> surveyData,
   ) async {
@@ -64,9 +75,7 @@ class AutoSyncService {
         if (kDebugMode) {
           print('⚠️ Encuesta duplicada detectada, evitando envío múltiple');
         }
-        throw Exception(
-          'Esta encuesta ya ha sido enviada o está en proceso de envío',
-        );
+        throw const DuplicateSurveyException();
       }
 
       surveyData['id'] = surveyId;
@@ -90,7 +99,7 @@ class AutoSyncService {
       }
 
       print(synced
-          ? '✅ Encuesta $surveyId enviada a PostgreSQL'
+          ? '✅ Encuesta $surveyId enviada a Supabase'
           : '📤 Encuesta $surveyId guardada en cola local');
 
       return SyncEnqueueResult(surveyId: surveyId, synced: synced);
@@ -313,13 +322,16 @@ class AutoSyncService {
       }
       
       // Verificar conectividad real con HTTP request
-      final client = HttpClient();
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 8);
       try {
         final request = await client.getUrl(Uri.parse('https://www.google.com'))
           ..followRedirects = false;
-        final response = await request.close();
-        await response.drain();
-        return response.statusCode == 200;
+        final response =
+            await request.close().timeout(const Duration(seconds: 8));
+        await response.drain<void>();
+        // Cualquier respuesta HTTP (incluida redirección 30x) prueba que hay red.
+        return response.statusCode < 500;
       } catch (e) {
         return false;
       } finally {
@@ -400,8 +412,8 @@ class AutoSyncService {
     try {
       print('📤 Enviando encuesta: ${surveyData['id']}');
 
-      final payload = _payloadForPostgres(surveyData);
-      await PostgresService.saveSurvey(payload);
+      final payload = _payloadForSync(surveyData);
+      await SupabaseService.saveSurvey(payload);
 
       try {
         await NotificationService.showFormSubmittedNotification(
@@ -411,7 +423,7 @@ class AutoSyncService {
         print('⚠️ Error enviando notificación push: $notificationError');
       }
 
-      print('✅ Encuesta enviada exitosamente a PostgreSQL');
+      print('✅ Encuesta enviada exitosamente a Supabase');
     } catch (e) {
       print('❌ Error enviando encuesta: $e');
       rethrow;
@@ -433,8 +445,8 @@ class AutoSyncService {
     }
   }
 
-  /// Elimina metadatos de sincronización antes de guardar en PostgreSQL.
-  static Map<String, dynamic> _payloadForPostgres(
+  /// Elimina metadatos de sincronización antes de enviar a Supabase.
+  static Map<String, dynamic> _payloadForSync(
     Map<String, dynamic> surveyData,
   ) {
     final copy = Map<String, dynamic>.from(surveyData);
@@ -499,6 +511,10 @@ class AutoSyncService {
       print('❌ Error deteniendo AutoSyncService: $e');
     }
   }
+
+  /// Retorna todas las encuestas pendientes en cola local.
+  static Future<List<Map<String, dynamic>>> getPendingSurveys() =>
+      _getPendingSurveys();
 
   /// Fuerza el procesamiento de encuestas pendientes (para pruebas)
   static Future<void> forceSyncNow() async {

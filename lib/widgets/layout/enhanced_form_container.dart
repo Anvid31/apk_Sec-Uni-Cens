@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../config/tokens.dart';
 import '../form/enhanced_form_navigation.dart';
 import '../../utils/form_navigator.dart';
 
@@ -58,7 +59,6 @@ class EnhancedFormContainer extends StatefulWidget {
 
 class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     with TickerProviderStateMixin {
-  
   late AnimationController _headerController;
   late AnimationController _contentController;
   late AnimationController _collapseController;
@@ -75,41 +75,35 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     FocusManager.instance.addListener(_scrollFocusedFieldIntoView);
 
     _headerController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: Motion.enter,
       vsync: this,
     );
-    
+
     _contentController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: Motion.base,
       vsync: this,
     );
 
-    _headerAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _headerController,
-      curve: Curves.easeOutCubic,
-    ));
+    _headerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerController, curve: Curves.easeOutCubic),
+    );
 
-    _contentAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _contentController,
-      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-    ));
+    _contentAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _contentController,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _contentSlideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _contentController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(parent: _contentController, curve: Curves.easeOutCubic),
+    );
 
     _collapseController = AnimationController(
-      duration: const Duration(milliseconds: 350),
+      duration: Motion.base,
       vsync: this,
       value: 1.0,
     );
@@ -146,11 +140,7 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
       if (!mounted) return;
       final ctx = FocusManager.instance.primaryFocus?.context;
       if (ctx == null) return;
-      Scrollable.ensureVisible(
-        ctx,
-        duration: Duration.zero,
-        alignment: 0.15,
-      );
+      Scrollable.ensureVisible(ctx, duration: Duration.zero, alignment: 0.15);
     });
   }
 
@@ -164,12 +154,14 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     super.dispose();
   }
 
-  Color get _primaryColor => widget.primaryColor ?? const Color(0xFF4CAF50);
+  Color _primaryColor(BuildContext context) =>
+      widget.primaryColor ?? Theme.of(context).colorScheme.primary;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: scheme.surface,
       resizeToAvoidBottomInset: false,
       body: Column(
         children: [
@@ -179,29 +171,30 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
             axisAlignment: -1.0,
             child: _buildAnimatedHeader(),
           ),
-          
+
           // Drag handle – siempre accesible independientemente del estado del header
           if (widget.showDragHandle) _buildDragHandle(),
 
           // Contenido principal
-          Expanded(
-            child: _buildAnimatedContent(),
-          ),
+          Expanded(child: _buildAnimatedContent()),
         ],
       ),
-      
+
       // Botones de navegación mejorados
-      bottomNavigationBar: widget.showNavigationButtons ? EnhancedFormNavigationButtons(
-        onPrevious: widget.onPrevious,
-        onNext: widget.onNext,
-        nextLabel: widget.nextLabel,
-        showPrevious: widget.showPrevious,
-        isLoading: widget.isLoading,
-        isLastStep: widget.isLastStep,
-        currentStep: widget.currentStep,
-        totalSteps: widget.totalSteps,
-      ) : null,
-      
+      bottomNavigationBar:
+          widget.showNavigationButtons
+              ? EnhancedFormNavigationButtons(
+                onPrevious: widget.onPrevious,
+                onNext: widget.onNext,
+                nextLabel: widget.nextLabel,
+                showPrevious: widget.showPrevious,
+                isLoading: widget.isLoading,
+                isLastStep: widget.isLastStep,
+                currentStep: widget.currentStep,
+                totalSteps: widget.totalSteps,
+              )
+              : null,
+
       // FloatingActionButton opcional
       floatingActionButton: widget.floatingActionButton,
     );
@@ -211,6 +204,9 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     return AnimatedBuilder(
       animation: _headerAnimation,
       builder: (context, child) {
+        final theme = Theme.of(context);
+        final primary = _primaryColor(context);
+        final onPrimary = theme.colorScheme.onPrimary;
         return Transform.translate(
           offset: Offset(0, -50 * (1 - _headerAnimation.value)),
           child: Opacity(
@@ -220,96 +216,70 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    _primaryColor,
-                    _primaryColor.withValues(alpha: 0.8),
-                  ],
+                  colors: [primary, primary.withValues(alpha: 0.85)],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(Insets.xl),
                   child: Column(
                     children: [
-                      // Header principal
                       Row(
                         children: [
-                          // Botón de retroceso con animación
                           if (widget.showPrevious)
-                            _buildAnimatedBackButton()
+                            _buildAnimatedBackButton(onPrimary)
                           else
                             const SizedBox(width: 40),
-                          
-                          // Título y subtítulo
                           Expanded(
                             child: Column(
                               children: [
                                 Text(
                                   widget.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                  ),
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        color: onPrimary,
+                                        letterSpacing: 0.2,
+                                      ),
                                   textAlign: TextAlign.center,
                                 ),
                                 if (widget.subtitle != null) ...[
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: Insets.xs),
                                   Text(
                                     widget.subtitle!,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: onPrimary.withValues(alpha: 0.9),
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
-                                const SizedBox(height: 8),
+                                const SizedBox(height: Insets.sm),
                                 Text(
                                   'Paso ${widget.currentStep} de ${widget.totalSteps}',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: onPrimary.withValues(alpha: 0.8),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          
-                          // Acciones del header
                           SizedBox(
                             width: 40,
-                            child: widget.headerActions != null
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: widget.headerActions!,
-                                  )
-                                : null,
+                            child:
+                                widget.headerActions != null
+                                    ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: widget.headerActions!,
+                                    )
+                                    : null,
                           ),
                         ],
                       ),
-                      
                       if (widget.showProgressBar) ...[
-                        const SizedBox(height: 24),
-                        
-                        // Barra de progreso mejorada
-                        _buildEnhancedProgressBar(),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Indicadores de paso
-                        _buildStepIndicators(),
+                        const SizedBox(height: Insets.xl),
+                        _buildEnhancedProgressBar(onPrimary),
+                        const SizedBox(height: Insets.lg),
+                        _buildStepIndicators(primary, onPrimary),
                       ],
                     ],
                   ),
@@ -322,36 +292,32 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
     );
   }
 
-  Widget _buildAnimatedBackButton() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            FormNavigator.popForm(context);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            child: const Icon(
-              Icons.arrow_back_ios,
-              color: Colors.white,
-              size: 20,
-            ),
+  Widget _buildAnimatedBackButton(Color onPrimary) {
+    return Material(
+      color: onPrimary.withValues(alpha: 0.2),
+      borderRadius: Radii.card,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          FormNavigator.popForm(context);
+        },
+        borderRadius: Radii.card,
+        child: Padding(
+          padding: const EdgeInsets.all(Insets.sm),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: onPrimary,
+            size: 20,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEnhancedProgressBar() {
+  Widget _buildEnhancedProgressBar(Color onPrimary) {
     final progress = widget.currentStep / widget.totalSteps;
-    
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Row(
@@ -359,99 +325,63 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
           children: [
             Text(
               'Progreso',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: onPrimary.withValues(alpha: 0.9),
               ),
             ),
             Text(
               '${(progress * 100).toInt()}%',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: onPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        
-        Container(
-          height: 6,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: Stack(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeInOutCubic,
-                width: MediaQuery.sizeOf(context).width * progress,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        const SizedBox(height: Insets.sm),
+        ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(3)),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: onPrimary.withValues(alpha: 0.2),
+            color: onPrimary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStepIndicators() {
+  Widget _buildStepIndicators(Color primary, Color onPrimary) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        widget.totalSteps.clamp(0, 9), // Máximo 9 indicadores
-        (index) {
-          final stepNumber = index + 1;
-          final isCompleted = stepNumber < widget.currentStep;
-          final isCurrent = stepNumber == widget.currentStep;
-          
-          return AnimatedContainer(
-            duration: Duration(milliseconds: 300 + (index * 50)),
-            curve: Curves.easeOutBack,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: isCurrent ? 16 : (isCompleted ? 12 : 8),
-            height: isCurrent ? 16 : (isCompleted ? 12 : 8),
-            decoration: BoxDecoration(
-              color: isCompleted || isCurrent 
-                  ? Colors.white 
-                  : Colors.white.withValues(alpha: 0.4),
-              shape: BoxShape.circle,
-              boxShadow: isCurrent ? [
-                BoxShadow(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  blurRadius: 12,
-                  spreadRadius: 3,
-                ),
-              ] : [],
-            ),
-            child: isCompleted
-                ? const Icon(
-                    Icons.check,
-                    color: Color(0xFF4CAF50),
-                    size: 8,
-                  )
-                : null,
-          );
-        },
-      ),
+      children: List.generate(widget.totalSteps.clamp(0, 9), (index) {
+        final stepNumber = index + 1;
+        final isCompleted = stepNumber < widget.currentStep;
+        final isCurrent = stepNumber == widget.currentStep;
+
+        return AnimatedContainer(
+          duration: Motion.base,
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: isCurrent ? 14 : (isCompleted ? 10 : 8),
+          height: isCurrent ? 14 : (isCompleted ? 10 : 8),
+          decoration: BoxDecoration(
+            color:
+                isCompleted || isCurrent
+                    ? onPrimary
+                    : onPrimary.withValues(alpha: 0.4),
+            shape: BoxShape.circle,
+          ),
+          child:
+              isCompleted ? Icon(Icons.check, color: primary, size: 8) : null,
+        );
+      }),
     );
   }
 
   Widget _buildAnimatedContent() {
+    final scheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _contentAnimation,
       builder: (context, child) {
@@ -459,28 +389,45 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
           position: _contentSlideAnimation,
           child: FadeTransition(
             opacity: _contentAnimation,
-            child: Container(
-              width: double.infinity,
-              color: Colors.white,
-              child: Column(
-                children: [
-                  // Contenido
-                  Expanded(
-                    child: widget.customScrolling
-                        ? Padding(
-                            padding: widget.contentPadding ?? const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                            child: widget.child,
-                          )
-                        : SingleChildScrollView(
-                            physics: const ClampingScrollPhysics(),
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: widget.contentPadding ??
-                                const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                            child: widget.child,
-                          ),
-                  ),
-                ],
+            // Material (no Container con color): los ListTile del formulario
+            // pintan su efecto de toque sobre el Material más cercano.
+            child: Material(
+              color: scheme.surfaceContainerLowest,
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child:
+                          widget.customScrolling
+                              ? Padding(
+                                padding:
+                                    widget.contentPadding ??
+                                    const EdgeInsets.fromLTRB(
+                                      Insets.xl,
+                                      Insets.lg,
+                                      Insets.xl,
+                                      0,
+                                    ),
+                                child: widget.child,
+                              )
+                              : SingleChildScrollView(
+                                physics: const ClampingScrollPhysics(),
+                                keyboardDismissBehavior:
+                                    ScrollViewKeyboardDismissBehavior.onDrag,
+                                padding:
+                                    widget.contentPadding ??
+                                    const EdgeInsets.fromLTRB(
+                                      Insets.xl,
+                                      Insets.lg,
+                                      Insets.xl,
+                                      0,
+                                    ),
+                                child: widget.child,
+                              ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -491,6 +438,8 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
 
   Widget _buildDragHandle() {
     final topInset = MediaQuery.paddingOf(context).top;
+    final scheme = Theme.of(context).colorScheme;
+    final primary = _primaryColor(context);
 
     return GestureDetector(
       onTap: _toggleHeader,
@@ -501,38 +450,26 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: Motion.base,
         curve: Curves.easeInOut,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: scheme.surfaceContainerLowest,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(_headerCollapsed ? 0 : 32),
             topRight: Radius.circular(_headerCollapsed ? 0 : 32),
           ),
-          boxShadow: _headerCollapsed
-              ? const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    offset: Offset(0, 2),
-                    blurRadius: 8,
-                  ),
-                ]
-              : const [
-                  BoxShadow(
-                    color: Color(0x1A000000),
-                    offset: Offset(0, -8),
-                    blurRadius: 32,
-                    spreadRadius: 0,
-                  ),
-                ],
+          border: Border(
+            bottom: BorderSide(
+              color: scheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
         ),
-        // Cuando el header está colapsado, respetar notch / barra de estado
         padding: EdgeInsets.only(
-          top: _headerCollapsed ? topInset + 8 : 10,
-          bottom: _headerCollapsed ? 12 : 10,
-          left: 16,
-          right: 16,
+          top: _headerCollapsed ? topInset + Insets.sm : 10,
+          bottom: _headerCollapsed ? Insets.md : 10,
+          left: Insets.lg,
+          right: Insets.lg,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -541,8 +478,8 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
               width: 40,
               height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
+                color: scheme.outline,
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
               ),
             ),
             if (_headerCollapsed) ...[
@@ -553,15 +490,14 @@ class _EnhancedFormContainerState extends State<EnhancedFormContainer>
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 22,
-                    color: _primaryColor.withValues(alpha: 0.85),
+                    color: primary.withValues(alpha: 0.85),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: Insets.xs),
                   Text(
                     'Mostrar encabezado',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
                     ),
                   ),
                 ],

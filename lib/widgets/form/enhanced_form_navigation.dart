@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../config/tokens.dart';
 
-/// Botones de navegación mejorados para formularios
+/// Botones de navegación para formularios multipaso.
 class EnhancedFormNavigationButtons extends StatefulWidget {
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
@@ -31,280 +32,123 @@ class EnhancedFormNavigationButtons extends StatefulWidget {
   });
 
   @override
-  State<EnhancedFormNavigationButtons> createState() => 
+  State<EnhancedFormNavigationButtons> createState() =>
       _EnhancedFormNavigationButtonsState();
 }
 
-class _EnhancedFormNavigationButtonsState 
-    extends State<EnhancedFormNavigationButtons> 
-    with TickerProviderStateMixin {
-  
+class _EnhancedFormNavigationButtonsState
+    extends State<EnhancedFormNavigationButtons>
+    with SingleTickerProviderStateMixin {
   late AnimationController _buttonController;
-  late AnimationController _progressController;
   late Animation<double> _buttonScale;
-  late Animation<double> _progressAnimation;
 
   @override
   void initState() {
     super.initState();
-    
     _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: Motion.fast,
       vsync: this,
     );
-    
-    _progressController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
+    _buttonScale = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _buttonController, curve: Curves.easeInOut),
     );
-
-    _buttonScale = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _buttonController,
-      curve: Curves.easeInOut,
-    ));
-
-    _progressAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _progressController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Animar la aparición del widget
-    _progressController.forward();
   }
 
   @override
   void dispose() {
     _buttonController.dispose();
-    _progressController.dispose();
     super.dispose();
   }
 
-  void _onNextPressed() async {
-    if (widget.isLoading || widget.onNext == null) return;
-    
-    // Feedback háptico
-    HapticFeedback.mediumImpact();
-    
-    // Animación del botón
-    await _buttonController.forward();
-    _buttonController.reverse();
-    
-    // Ejecutar callback
-    widget.onNext!();
-  }
-
-  void _onPreviousPressed() async {
-    if (widget.isLoading || widget.onPrevious == null) return;
-    
-    // Feedback háptico
+  Future<void> _pressFeedback(VoidCallback? action) async {
+    if (action == null) return;
     HapticFeedback.lightImpact();
-    
-    // Animación del botón
     await _buttonController.forward();
-    _buttonController.reverse();
-    
-    // Ejecutar callback
-    widget.onPrevious!();
+    await _buttonController.reverse();
+    action();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _progressAnimation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, 50 * (1 - _progressAnimation.value)),
-          child: Opacity(
-            opacity: _progressAnimation.value,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,                child: Row(
-                  children: [
-                    // Botón anterior
-                    if (widget.showPrevious) ...[
-                      Expanded(
-                        flex: 1,
-                        child: _buildPreviousButton(),
-                      ),
-                      const SizedBox(width: 16),
-                    ],
-                    
-                    // Botón siguiente
-                    Expanded(
-                      flex: widget.showPrevious ? 2 : 1,
-                      child: _buildNextButton(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-  Widget _buildPreviousButton() {
-    return AnimatedBuilder(
-      animation: _buttonScale,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: widget.onPrevious != null ? _buttonScale.value : 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onPrevious != null ? _onPreviousPressed : null,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        widget.previousIcon ?? Icons.arrow_back_ios,
-                        color: widget.onPrevious != null
-                            ? const Color(0xFF4CAF50)
-                            : Colors.grey.shade400,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.previousLabel,
-                        style: TextStyle(
-                          color: widget.onPrevious != null
-                              ? const Color(0xFF4CAF50)
-                              : Colors.grey.shade400,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+    final scheme = Theme.of(context).colorScheme;
 
-  Widget _buildNextButton() {
-    final isEnabled = widget.onNext != null && !widget.isLoading;
-    
-    return AnimatedBuilder(
-      animation: _buttonScale,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: isEnabled ? _buttonScale.value : 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: isEnabled
-                  ? const LinearGradient(
-                      colors: [
-                        Color(0xFF4CAF50),
-                        Color(0xFF45A049),
-                      ],
-                    )
-                  : null,
-              color: isEnabled ? null : Colors.grey.shade300,
-              boxShadow: isEnabled
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: isEnabled ? _onNextPressed : null,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.isLoading) ...[
-                        SizedBox(
-                          width: 20,
-                          height: 20,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(Insets.xl, Insets.lg, Insets.xl, Insets.sm),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: Radii.sheetSm,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: AnimatedBuilder(
+          animation: _buttonScale,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _buttonScale.value,
+              child: child,
+            );
+          },
+          child: Row(
+            children: [
+              if (widget.showPrevious) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: widget.onPrevious == null || widget.isLoading
+                        ? null
+                        : () => _pressFeedback(widget.onPrevious),
+                    icon: Icon(
+                      widget.previousIcon ?? Icons.arrow_back_ios_new_rounded,
+                      size: 16,
+                    ),
+                    // Botón angosto (flex 1): se reduce en vez de partir la palabra.
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(widget.previousLabel, maxLines: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Insets.lg),
+              ],
+              Expanded(
+                flex: widget.showPrevious ? 2 : 1,
+                child: FilledButton.icon(
+                  key: const ValueKey('btn_next'),
+                  onPressed: widget.onNext == null || widget.isLoading
+                      ? null
+                      : () => _pressFeedback(widget.onNext),
+                  icon: widget.isLoading
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isEnabled ? Colors.white : Colors.grey.shade600,
-                            ),
+                            color: scheme.onPrimary,
                           ),
+                        )
+                      : Icon(
+                          widget.nextIcon ??
+                              (widget.isLastStep
+                                  ? Icons.check_rounded
+                                  : Icons.arrow_forward_ios_rounded),
+                          size: 16,
                         ),
-                        const SizedBox(width: 12),
-                      ],
-                      
-                      Text(
-                        widget.isLoading 
-                            ? 'Procesando...'
-                            : widget.nextLabel,
-                        style: TextStyle(
-                          color: isEnabled ? Colors.white : Colors.grey.shade600,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      
-                      if (!widget.isLoading) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          widget.nextIcon ?? 
-                          (widget.isLastStep 
-                              ? Icons.check 
-                              : Icons.arrow_forward_ios),
-                          color: isEnabled ? Colors.white : Colors.grey.shade600,
-                          size: 18,
-                        ),
-                      ],
-                    ],
+                  label: Text(
+                    widget.isLoading ? 'Procesando...' : widget.nextLabel,
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-/// Versión simplificada para casos específicos
+/// Versión simplificada para casos específicos.
 class QuickFormButtons extends StatelessWidget {
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
@@ -323,52 +167,32 @@ class QuickFormButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.all(Insets.lg),
       child: Row(
         children: [
           if (showPrevious) ...[
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onPrevious,
-                icon: const Icon(Icons.arrow_back_ios, size: 18),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
                 label: const Text('Anterior'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Color(0xFF4CAF50)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: Insets.lg),
           ],
-          
           Expanded(
             flex: showPrevious ? 2 : 1,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: isLoading ? null : onNext,
-              icon: isLoading 
+              icon: isLoading
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.arrow_forward_ios, size: 18),
+                  : const Icon(Icons.arrow_forward_ios_rounded, size: 16),
               label: Text(isLoading ? 'Procesando...' : nextLabel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
             ),
           ),
         ],

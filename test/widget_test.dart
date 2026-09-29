@@ -13,7 +13,7 @@ void main() {
       ),
     );
 
-    expect(find.text('CENS Caracterización'), findsOneWidget);
+    expect(find.text('Caracterización y Mapeo de Necesidades I.E.'), findsOneWidget);
     expect(find.text('Formulario de Caracterización'), findsOneWidget);
   });
 }

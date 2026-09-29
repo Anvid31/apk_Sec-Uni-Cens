@@ -72,7 +72,6 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
     }
 
     return Card(
-      elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -88,7 +87,7 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
+                child: FilledButton.icon(
                   onPressed: () async {
                     setState(() => _isLoading = true);
                     try {
@@ -100,10 +99,6 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
                   },
                   icon: const Icon(Icons.sync, size: 16),
                   label: const Text('Sincronizar ahora'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
                 ),
               ),
             ],
@@ -114,6 +109,7 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
   }
 
   Widget _buildHeader() {
+    final scheme = Theme.of(context).colorScheme;
     final pendingCount = _syncStatus['pendingCount'] ?? 0;
     final hasConnectivity = _syncStatus['hasConnectivity'] ?? false;
     
@@ -122,16 +118,16 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
     String statusText;
     
     if (_syncStatus.containsKey('error')) {
-      statusColor = Colors.red;
-      statusIcon = Icons.error;
+      statusColor = scheme.error;
+      statusIcon = Icons.error_outline;
       statusText = 'Error';
     } else if (pendingCount > 0) {
-      statusColor = Colors.orange;
-      statusIcon = Icons.pending;
+      statusColor = scheme.tertiary;
+      statusIcon = Icons.pending_outlined;
       statusText = 'Pendientes: $pendingCount';
     } else {
-      statusColor = Colors.green;
-      statusIcon = Icons.check_circle;
+      statusColor = scheme.primary;
+      statusIcon = Icons.check_circle_outline;
       statusText = 'Sincronizado';
     }
 
@@ -140,7 +136,7 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -170,11 +166,12 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
             ],
           ),
         ),
-        // Indicador de conectividad
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: hasConnectivity ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+            color: hasConnectivity
+                ? scheme.primary.withValues(alpha: 0.12)
+                : scheme.error.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -182,14 +179,14 @@ class _AutoSyncStatusWidgetState extends State<AutoSyncStatusWidget> {
             children: [
               Icon(
                 hasConnectivity ? Icons.wifi : Icons.wifi_off,
-                color: hasConnectivity ? Colors.green : Colors.red,
+                color: hasConnectivity ? scheme.primary : scheme.error,
                 size: 16,
               ),
               const SizedBox(width: 4),
               Text(
                 hasConnectivity ? 'Online' : 'Offline',
                 style: TextStyle(
-                  color: hasConnectivity ? Colors.green : Colors.red,
+                  color: hasConnectivity ? scheme.primary : scheme.error,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),

@@ -52,9 +52,15 @@ app.*.map.json
 # Archivos de firma - NUNCA subir llaves privadas
 /android/key.properties
 /android/*.jks
+/android/app/*.jks
 /android/*.keystore
+/android/app/*.keystore
 caracT-key.jks
 .env.staging
 
 # Archivos de configuración privada
 /lib/config/private_config.dart
+
+# Config local con tokens y material de demo pesado
+.mcp.json
+/clips/

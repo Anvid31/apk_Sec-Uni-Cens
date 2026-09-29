@@ -1,0 +1,10 @@
+# Plantilla de clave de firma — copiar como key.properties y NO subir a git
+# (key.properties ya está en .gitignore)
+#
+# Para generar el keystore por primera vez:
+#   ./scripts/generate_keystore.sh
+#
+storeFile=../app/upload-keystore.jks
+storePassword=CAMBIA_STORE_PASSWORD
+keyAlias=upload
+keyPassword=CAMBIA_KEY_PASSWORD

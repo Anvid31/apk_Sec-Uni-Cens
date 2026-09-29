@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../models/institucion_catalog.dart';
 import '../../models/unified_survey_state.dart';
+import '../../utils/draft_autosave.dart';
 import '../../widgets/form/custom_text_field.dart';
 import '../../widgets/form/custom_dropdown_field.dart';
 import '../../widgets/form/photo_capture_field.dart';
@@ -9,6 +11,7 @@ import '../../widgets/layout/enhanced_form_container.dart';
 import '../../utils/form_navigator.dart';
 import '../../utils/location_data.dart';
 import '../../config/theme.dart';
+import '../../services/instituciones_catalog_service.dart';
 import '../../services/location_service.dart';
 import 'phase2_dotacion_page.dart';
 
@@ -19,12 +22,20 @@ class Phase1InfoGeneralPage extends StatefulWidget {
   State<Phase1InfoGeneralPage> createState() => _Phase1InfoGeneralPageState();
 }
 
-class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
+class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage>
+    with DraftAutosave<Phase1InfoGeneralPage> {
+  @override
+  UnifiedSurveyState get draftState => _state;
+
+  @override
+  void syncDraftToState() => _saveToState();
+
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   late UnifiedSurveyState _state;
   bool _showErrors = false;
   bool _isLoadingLocation = false;
+  bool _catalogLoaded = false;
 
   // Text controllers — Información General
   final _corregimientoCtrl = TextEditingController();
@@ -32,8 +43,6 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
   final _intervieweeNameCtrl = TextEditingController();
   final _intervieweeRoleCtrl = TextEditingController();
   final _intervieweeContactCtrl = TextEditingController();
-  final _principalInstitutionCtrl = TextEditingController();
-  final _schoolNameCtrl = TextEditingController();
   final _daneCodeCtrl = TextEditingController();
   final _principalNameCtrl = TextEditingController();
   final _principalPhoneCtrl = TextEditingController();
@@ -43,28 +52,16 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
   final _accessObsCtrl = TextEditingController();
   final _recentProjectsCtrl = TextEditingController();
 
-  // Text controllers — Cobertura
-  final _totalStudentsCtrl = TextEditingController();
-  final _girlsCtrl = TextEditingController();
-  final _boysCtrl = TextEditingController();
-  final _refugeeCtrl = TextEditingController();
-  final _conflictCtrl = TextEditingController();
-  final _ethnicCtrl = TextEditingController();
-  final _disabledCtrl = TextEditingController();
-  final _teachersCtrl = TextEditingController();
-  final _adminCtrl = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     _state = Provider.of<UnifiedSurveyState>(context, listen: false);
+    startDraftAutosave();
     _corregimientoCtrl.text = _state.corregimiento ?? '';
     _veredaCtrl.text = _state.vereda ?? '';
     _intervieweeNameCtrl.text = _state.intervieweeName ?? '';
     _intervieweeRoleCtrl.text = _state.intervieweeRole ?? '';
     _intervieweeContactCtrl.text = _state.intervieweeContact ?? '';
-    _principalInstitutionCtrl.text = _state.principalInstitution ?? '';
-    _schoolNameCtrl.text = _state.schoolName ?? '';
     _daneCodeCtrl.text = _state.daneCode ?? '';
     _principalNameCtrl.text = _state.principalName ?? '';
     _principalPhoneCtrl.text = _state.principalPhone ?? '';
@@ -73,15 +70,151 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     _lonCtrl.text = _state.longitude?.toString() ?? '';
     _accessObsCtrl.text = _state.accessObservations ?? '';
     _recentProjectsCtrl.text = _state.recentProjects ?? '';
-    _totalStudentsCtrl.text = _state.totalStudents?.toString() ?? '';
-    _girlsCtrl.text = _state.girlsCount?.toString() ?? '';
-    _boysCtrl.text = _state.boysCount?.toString() ?? '';
-    _refugeeCtrl.text = _state.refugeeStudents?.toString() ?? '';
-    _conflictCtrl.text = _state.conflictVictims?.toString() ?? '';
-    _ethnicCtrl.text = _state.ethnicStudents?.toString() ?? '';
-    _disabledCtrl.text = _state.disabledStudents?.toString() ?? '';
-    _teachersCtrl.text = _state.teachersCount?.toString() ?? '';
-    _adminCtrl.text = _state.adminStaff?.toString() ?? '';
+    _loadInstitucionesCatalog();
+  }
+
+  Future<void> _loadInstitucionesCatalog() async {
+    try {
+      await InstitucionesCatalogService.load();
+      _syncCatalogSelectionFromState();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No se pudo cargar el catálogo de instituciones: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _catalogLoaded = true);
+    }
+  }
+
+  /// Descarta institución/sede/DANE que no existan en el catálogo filtrado.
+  void _syncCatalogSelectionFromState() {
+    // Borradores antiguos guardaban solo el nombre de la institución.
+    if (_state.principalInstitutionDane == null &&
+        _state.principalInstitution != null) {
+      _state.principalInstitutionDane =
+          InstitucionesCatalogService.institucionUnicaPorNombre(
+        _state.municipality,
+        _state.zone,
+        _state.principalInstitution,
+      )?.codigoDane;
+    }
+
+    final institucion = _institucionSeleccionada;
+    if (institucion == null) {
+      if (_state.principalInstitution != null ||
+          _state.principalInstitutionDane != null) {
+        _clearInstitutionCascade();
+      }
+      return;
+    }
+
+    final sede = InstitucionesCatalogService.sedePorNombre(
+      institucion,
+      _state.schoolName,
+    );
+    if (_state.schoolName != null && sede == null) {
+      _clearInstitutionCascade(clearInstitution: false);
+      return;
+    }
+    if (sede != null) {
+      _state.daneCode = sede.consSede;
+      _daneCodeCtrl.text = sede.consSede;
+    }
+  }
+
+  List<InstitucionEducativa> get _institucionesFiltradas =>
+      InstitucionesCatalogService.institucionesPor(
+        _state.municipality,
+        _state.zone,
+      );
+
+  InstitucionEducativa? get _institucionSeleccionada =>
+      InstitucionesCatalogService.institucionPorCodigo(
+        _state.municipality,
+        _state.zone,
+        _state.principalInstitutionDane,
+      );
+
+  /// Nombre visible; si el nombre se repite en el municipio/zona se agrega
+  /// la sede principal y el código DANE para distinguirlas.
+  String _institucionLabel(String codigoDane) {
+    final lista = _institucionesFiltradas;
+    final inst = lista.firstWhere((i) => i.codigoDane == codigoDane);
+    final repetido = lista.where((i) => i.nombre == inst.nombre).length > 1;
+    if (!repetido) return inst.nombre;
+    final otras = inst.sedes
+        .map((s) => s.nombre)
+        .where((n) => n != inst.nombre)
+        .take(1);
+    final detalle = otras.isEmpty ? '' : ' · ${otras.first}';
+    return '${inst.nombre} (DANE $codigoDane$detalle)';
+  }
+
+  List<SedeEducativa> get _sedesFiltradas =>
+      InstitucionesCatalogService.sedesDe(_institucionSeleccionada);
+
+  void _clearInstitutionCascade({
+    bool clearZone = false,
+    bool clearInstitution = true,
+    bool clearSede = true,
+  }) {
+    if (clearZone) _state.zone = null;
+    if (clearInstitution) {
+      _state.principalInstitution = null;
+      _state.principalInstitutionDane = null;
+    }
+    if (clearSede) {
+      _state.schoolName = null;
+      _state.daneCode = null;
+      _daneCodeCtrl.clear();
+    }
+  }
+
+  void _onMunicipalityChanged(String? value) {
+    setState(() {
+      _state.municipality = value;
+      _clearInstitutionCascade(clearZone: true);
+    });
+  }
+
+  void _onZoneChanged(String? value) {
+    setState(() {
+      _state.zone = value;
+      _clearInstitutionCascade(clearInstitution: true, clearSede: true);
+      if (value == 'Urbano') {
+        _corregimientoCtrl.clear();
+        _veredaCtrl.clear();
+        _state.corregimiento = null;
+        _state.vereda = null;
+      }
+    });
+  }
+
+  bool get _showCorregimientoVereda => _state.zone == 'Rural';
+
+  void _onInstitutionChanged(String? codigoDane) {
+    setState(() {
+      _state.principalInstitutionDane = codigoDane;
+      _state.principalInstitution = _institucionSeleccionada?.nombre;
+      _clearInstitutionCascade(clearInstitution: false, clearSede: true);
+    });
+  }
+
+  void _onSedeChanged(String? value) {
+    setState(() {
+      _state.schoolName = value;
+      final sede = InstitucionesCatalogService.sedePorNombre(
+        _institucionSeleccionada,
+        value,
+      );
+      _state.daneCode = sede?.consSede;
+      _daneCodeCtrl.text = sede?.consSede ?? '';
+    });
   }
 
   @override
@@ -92,8 +225,6 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     _intervieweeNameCtrl.dispose();
     _intervieweeRoleCtrl.dispose();
     _intervieweeContactCtrl.dispose();
-    _principalInstitutionCtrl.dispose();
-    _schoolNameCtrl.dispose();
     _daneCodeCtrl.dispose();
     _principalNameCtrl.dispose();
     _principalPhoneCtrl.dispose();
@@ -102,23 +233,19 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     _lonCtrl.dispose();
     _accessObsCtrl.dispose();
     _recentProjectsCtrl.dispose();
-    _totalStudentsCtrl.dispose();
-    _girlsCtrl.dispose();
-    _boysCtrl.dispose();
-    _refugeeCtrl.dispose();
-    _conflictCtrl.dispose();
-    _ethnicCtrl.dispose();
-    _disabledCtrl.dispose();
-    _teachersCtrl.dispose();
-    _adminCtrl.dispose();
     super.dispose();
   }
 
   // Guarda todos los valores de los controllers al state
   void _saveToState() {
-    _state.corregimiento =
-        _corregimientoCtrl.text.isEmpty ? null : _corregimientoCtrl.text;
-    _state.vereda = _veredaCtrl.text.isEmpty ? null : _veredaCtrl.text;
+    if (_showCorregimientoVereda) {
+      _state.corregimiento =
+          _corregimientoCtrl.text.isEmpty ? null : _corregimientoCtrl.text;
+      _state.vereda = _veredaCtrl.text.isEmpty ? null : _veredaCtrl.text;
+    } else {
+      _state.corregimiento = null;
+      _state.vereda = null;
+    }
     _state.intervieweeName =
         _intervieweeNameCtrl.text.isEmpty ? null : _intervieweeNameCtrl.text;
     _state.intervieweeRole =
@@ -126,12 +253,9 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     _state.intervieweeContact = _intervieweeContactCtrl.text.isEmpty
         ? null
         : _intervieweeContactCtrl.text;
-    _state.principalInstitution = _principalInstitutionCtrl.text.isEmpty
-        ? null
-        : _principalInstitutionCtrl.text;
-    _state.schoolName =
-        _schoolNameCtrl.text.isEmpty ? null : _schoolNameCtrl.text;
-    _state.daneCode = _daneCodeCtrl.text.isEmpty ? null : _daneCodeCtrl.text;
+    // principalInstitution, schoolName y daneCode se actualizan en los dropdowns
+    _state.daneCode =
+        _daneCodeCtrl.text.isEmpty ? null : _daneCodeCtrl.text;
     _state.principalName =
         _principalNameCtrl.text.isEmpty ? null : _principalNameCtrl.text;
     _state.principalPhone =
@@ -144,37 +268,36 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
         _accessObsCtrl.text.isEmpty ? null : _accessObsCtrl.text;
     _state.recentProjects =
         _recentProjectsCtrl.text.isEmpty ? null : _recentProjectsCtrl.text;
-    _state.totalStudents = int.tryParse(_totalStudentsCtrl.text);
-    _state.girlsCount = int.tryParse(_girlsCtrl.text);
-    _state.boysCount = int.tryParse(_boysCtrl.text);
-    _state.refugeeStudents = int.tryParse(_refugeeCtrl.text);
-    _state.conflictVictims = int.tryParse(_conflictCtrl.text);
-    _state.ethnicStudents = int.tryParse(_ethnicCtrl.text);
-    _state.disabledStudents = int.tryParse(_disabledCtrl.text);
-    _state.teachersCount = int.tryParse(_teachersCtrl.text);
-    _state.adminStaff = int.tryParse(_adminCtrl.text);
-    _state.notify();
+    // Sin notify(): el autoguardado la llama en deactivate (durante build).
   }
 
   Future<void> _getLocation() async {
     setState(() => _isLoadingLocation = true);
     try {
       final position = await LocationService.getCurrentLocation();
-      if (position != null) {
+      if (!mounted) return;
+      setState(() {
+        _state.locationUnavailable = false;
+        _latCtrl.text = position.latitude.toStringAsFixed(6);
+        _lonCtrl.text = position.longitude.toStringAsFixed(6);
+      });
+    } on LocationFailure catch (e) {
+      if (!mounted) return;
+      if (e.definitive) {
         setState(() {
-          _latCtrl.text = position.latitude.toStringAsFixed(6);
-          _lonCtrl.text = position.longitude.toStringAsFixed(6);
+          _state.locationUnavailable = true;
+          _latCtrl.clear();
+          _lonCtrl.clear();
         });
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo obtener la ubicación. Verifique que el GPS esté activado y que haya concedido permisos.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.definitive
+              ? '${e.message} La ubicación quedará como "No disponible".'
+              : e.message),
+          backgroundColor: Colors.orange,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,8 +312,29 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     }
   }
 
+  /// Valida latitud/longitud: obligatorias salvo que la ubicación
+  /// esté marcada como "No disponible".
+  String? _validateCoord(String? value, double limit) {
+    if (_state.locationUnavailable) return null;
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Requerido. Use el botón GPS';
+    final n = double.tryParse(text);
+    if (n == null || n < -limit || n > limit) {
+      return 'Valor inválido (±${limit.toInt()})';
+    }
+    return null;
+  }
+
+  // Escribir coordenadas a mano anula el estado "No disponible".
+  void _onCoordEdited(String _) {
+    if (_state.locationUnavailable) {
+      setState(() => _state.locationUnavailable = false);
+    }
+  }
+
   void _onNext() {
     _saveToState();
+    _state.notify();
 
     // Validar campos de texto con Form
     final formValid = _formKey.currentState?.validate() ?? false;
@@ -199,6 +343,22 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     final List<String> missing = [];
     if (_state.municipality == null) missing.add('Municipio');
     if (_state.zone == null) missing.add('Zona');
+    if (_state.principalInstitution == null) {
+      missing.add('Institución Educativa');
+    }
+    if (_state.schoolName == null) missing.add('Sede');
+    if (_state.daneCode == null || _state.daneCode!.isEmpty) {
+      missing.add('Código DANE');
+    }
+    if (!_state.locationUnavailable &&
+        (_state.latitude == null || _state.longitude == null)) {
+      missing.add('Ubicación GPS');
+    }
+    if (_state.educationLevels.isEmpty) missing.add('Niveles educativos');
+    if (_state.photoFront == null || _state.photoFront!.isEmpty) missing.add('Foto frente de la sede');
+    if (_state.photoClassroom1 == null || _state.photoClassroom1!.isEmpty) missing.add('Foto Aula 1');
+    if (_state.photoClassroom2 == null || _state.photoClassroom2!.isEmpty) missing.add('Foto Aula 2');
+    if (_state.photoBathroom == null || _state.photoBathroom!.isEmpty) missing.add('Foto baño');
 
     if (!formValid || missing.isNotEmpty) {
       setState(() => _showErrors = true);
@@ -219,7 +379,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
       return;
     }
 
-    FormNavigator.pushReplacementForm(
+    FormNavigator.pushForm(
       context,
       const Phase2DotacionPage(),
       stepNumber: 2,
@@ -235,7 +395,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
       title: 'Información General',
       subtitle: 'Datos de identificación, cobertura y registro fotográfico',
       currentStep: 1,
-      totalSteps: 4,
+      totalSteps: 5,
       showPrevious: false,
       showNavigationButtons: false,
       customScrolling: true,
@@ -271,33 +431,6 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                     label: 'Departamento',
                     value: _state.department,
                   ),
-                  const SizedBox(height: 12),
-                  _buildRequiredDropdown(
-                    label: 'Municipio',
-                    value: _state.municipality,
-                    items: LocationData.getMunicipalities('Norte de Santander'),
-                    hint: 'Seleccione el municipio',
-                    icon: Icons.location_city,
-                    onChanged: (v) => setState(() => _state.municipality = v),
-                  ),
-                  _buildRequiredDropdown(
-                    label: 'Zona',
-                    value: _state.zone,
-                    items: const ['Urbano', 'Rural'],
-                    hint: 'Seleccione zona',
-                    icon: Icons.map_outlined,
-                    onChanged: (v) => setState(() => _state.zone = v),
-                  ),
-                  CustomTextField(
-                    label: 'Corregimiento',
-                    controller: _corregimientoCtrl,
-                    hintText: 'Campo libre',
-                  ),
-                  CustomTextField(
-                    label: 'Vereda',
-                    controller: _veredaCtrl,
-                    hintText: 'Campo libre',
-                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -327,44 +460,109 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
               ),
               const SizedBox(height: 16),
 
-              // ─── SECCIÓN 1c: INSTITUCIÓN EDUCATIVA ──────────────────
+              // ─── SECCIÓN 1c: SEDE EDUCATIVA (ubicación + institución) ─
               _buildSectionCard(
-                title: 'Institución Educativa',
+                title: 'Sede Educativa',
                 icon: Icons.school_outlined,
                 children: [
-                  CustomTextField(
-                    label: 'Nombre de la Institución Educativa Principal',
-                    controller: _principalInstitutionCtrl,
-                    showRequiredIndicator: true,
-                    hintText: 'Campo libre',
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Campo requerido' : null,
+                  _buildRequiredDropdown(
+                    label: 'Municipio',
+                    value: _state.municipality,
+                    items: LocationData.getMunicipalities('Norte de Santander'),
+                    hint: 'Seleccione el municipio',
+                    icon: Icons.location_city,
+                    onChanged: _onMunicipalityChanged,
                   ),
-                  CustomTextField(
-                    label: 'Nombre de la sede',
-                    controller: _schoolNameCtrl,
-                    showRequiredIndicator: true,
-                    hintText: 'Campo libre',
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Campo requerido' : null,
+                  _buildRequiredDropdown(
+                    label: 'Zona',
+                    value: _state.zone,
+                    items: const ['Urbano', 'Rural'],
+                    hint: 'Seleccione zona',
+                    icon: Icons.map_outlined,
+                    onChanged: _onZoneChanged,
+                    enabled: _state.municipality != null,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: TextFormField(
-                      controller: _daneCodeCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Campo requerido' : null,
-                      decoration: const InputDecoration(
-                        label: Text('Código DANE de la sede *',
-                            style: TextStyle(color: Colors.black87)),
-                        hintText: 'Campo numérico libre',
-                        prefixIcon: Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(),
+                  if (_showCorregimientoVereda) ...[
+                    CustomTextField(
+                      label: 'Corregimiento',
+                      controller: _corregimientoCtrl,
+                      hintText: 'Campo libre',
+                    ),
+                    CustomTextField(
+                      label: 'Vereda',
+                      controller: _veredaCtrl,
+                      hintText: 'Campo libre',
+                    ),
+                  ],
+                  if (!_catalogLoaded)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    _buildRequiredDropdown(
+                      label: 'Institución Educativa Principal',
+                      value: _state.principalInstitutionDane,
+                      items: _institucionesFiltradas
+                          .map((i) => i.codigoDane)
+                          .toList(),
+                      itemLabel: _institucionLabel,
+                      searchable: true,
+                      hint: _state.municipality == null || _state.zone == null
+                          ? 'Seleccione municipio y zona'
+                          : (_institucionesFiltradas.isEmpty
+                              ? 'Sin instituciones para este municipio/zona'
+                              : 'Seleccione la institución'),
+                      icon: Icons.school,
+                      onChanged: _onInstitutionChanged,
+                      enabled: _state.municipality != null &&
+                          _state.zone != null &&
+                          _institucionesFiltradas.isNotEmpty,
+                    ),
+                    _buildRequiredDropdown(
+                      label: 'Nombre de la sede',
+                      value: _state.schoolName,
+                      items: _sedesFiltradas.map((s) => s.nombre).toList(),
+                      hint: _state.principalInstitution == null
+                          ? 'Seleccione primero la institución'
+                          : (_sedesFiltradas.isEmpty
+                              ? 'Sin sedes para esta institución'
+                              : 'Seleccione la sede'),
+                      icon: Icons.apartment_outlined,
+                      onChanged: _onSedeChanged,
+                      enabled: _state.principalInstitution != null &&
+                          _sedesFiltradas.isNotEmpty,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: TextFormField(
+                        controller: _daneCodeCtrl,
+                        readOnly: true,
+                        enableInteractiveSelection: true,
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Campo requerido' : null,
+                        decoration: InputDecoration(
+                          label: const Text(
+                            'Código DANE de la sede *',
+                            style: TextStyle(color: Colors.black87),
+                          ),
+                          hintText: _state.schoolName == null
+                              ? 'Se completa al elegir la sede'
+                              : null,
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   CustomTextField(
                     label: 'Nombre del rector',
                     controller: _principalNameCtrl,
@@ -380,6 +578,14 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                     label: 'Email del rector (campo no obligatorio)',
                     controller: _principalEmailCtrl,
                     keyboardType: TextInputType.emailAddress,
+                    // Opcional: solo valida el formato si se escribe algo.
+                    validator: (v) {
+                      final text = v?.trim() ?? '';
+                      if (text.isEmpty) return null;
+                      return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(text)
+                          ? null
+                          : 'Correo no válido (ej: rector@colegio.edu.co)';
+                    },
                     hintText: 'Campo libre',
                   ),
                 ],
@@ -406,11 +612,16 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                               FilteringTextInputFormatter.allow(
                                   RegExp(r'^-?\d*\.?\d*')),
                             ],
-                            decoration: const InputDecoration(
-                              labelText: 'Latitud',
-                              hintText: 'Numérico',
-                              prefixIcon: Icon(Icons.gps_fixed),
-                              border: OutlineInputBorder(),
+                            onChanged: _onCoordEdited,
+                            validator: (v) => _validateCoord(v, 90),
+                            decoration: InputDecoration(
+                              labelText: 'Latitud *',
+                              hintText: _state.locationUnavailable
+                                  ? 'No disponible'
+                                  : 'Numérico',
+                              // Sin prefixIcon: campo angosto, cortaba etiqueta y error.
+                              errorMaxLines: 3,
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -427,11 +638,16 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                               FilteringTextInputFormatter.allow(
                                   RegExp(r'^-?\d*\.?\d*')),
                             ],
-                            decoration: const InputDecoration(
-                              labelText: 'Longitud',
-                              hintText: 'Numérico',
-                              prefixIcon: Icon(Icons.gps_not_fixed),
-                              border: OutlineInputBorder(),
+                            onChanged: _onCoordEdited,
+                            validator: (v) => _validateCoord(v, 180),
+                            decoration: InputDecoration(
+                              labelText: 'Longitud *',
+                              hintText: _state.locationUnavailable
+                                  ? 'No disponible'
+                                  : 'Numérico',
+                              // Sin prefixIcon: campo angosto, cortaba etiqueta y error.
+                              errorMaxLines: 3,
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -458,6 +674,29 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                       ),
                     ],
                   ),
+                  if (_state.locationUnavailable)
+                    Semantics(
+                      liveRegion: true,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_off,
+                                size: 18, color: Colors.orange.shade800),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Ubicación no disponible: el dispositivo no pudo obtenerla. '
+                                'Puede reintentar con el botón GPS o escribir las coordenadas.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange.shade900),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   _MultiSelectField(
                     label: 'Tipo de acceso',
@@ -476,13 +715,16 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                     controller: _accessObsCtrl,
                     maxLines: 3,
                     hintText: 'Texto libre',
+                    helperText:
+                        '(Ej: Desde el casco urbano del corregimiento preguntar por el billar del Sr. Edgar. Sigue el camino hasta llegar a la sede educativa Riecito (La Vega) aprox. 40 minutos en moto o carro)',
+                    helperMaxLines: 5,
                   ),
                   CustomTextField(
-                    label: 'Proyectos ejecutados en los últimos 2 años',
+                    label: 'En los últimos 2 años mencione qué proyectos se han ejecutado (proyectos de infraestructura, dotación, energía, agua, etc) y nombre la entidad u organización',
                     controller: _recentProjectsCtrl,
                     maxLines: 4,
                     hintText:
-                        'Mencione proyectos de infraestructura, dotación, energía, agua, etc. y la entidad u organización.',
+                        'Ej: Gobierno Nacional, Gobierno Departamental, Gobierno Local, Comunidad / JAC, ONG, Organización privada',
                   ),
                 ],
               ),
@@ -493,64 +735,8 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                 title: 'Cobertura',
                 icon: Icons.people_outline,
                 children: [
-                  _buildNumericRequired(
-                    label: 'Estudiantes matriculados en la sede educativa',
-                    ctrl: _totalStudentsCtrl,
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildNumericRequired(
-                          label: 'Número de niñas',
-                          ctrl: _girlsCtrl,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildNumericRequired(
-                          label: 'Número de niños',
-                          ctrl: _boysCtrl,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildNumericRequired(
-                    label: 'Estudiantes refugiados o migrantes',
-                    ctrl: _refugeeCtrl,
-                  ),
-                  _buildNumericRequired(
-                    label: 'Estudiantes víctimas del conflicto',
-                    ctrl: _conflictCtrl,
-                  ),
-                  _buildNumericRequired(
-                    label: 'Estudiantes pertenecientes a una etnia',
-                    ctrl: _ethnicCtrl,
-                  ),
-                  _buildNumericRequired(
-                    label: 'Estudiantes con alguna condición de discapacidad',
-                    ctrl: _disabledCtrl,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: TextFormField(
-                      controller: _teachersCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Número de docentes',
-                        hintText: 'Texto libre',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  _buildNumericRequired(
-                    label:
-                        'Número de personas administrativas, directivos, personal de aseo',
-                    ctrl: _adminCtrl,
-                  ),
-                  const SizedBox(height: 8),
                   _MultiSelectField(
-                    label: 'Niveles educativos',
+                    label: 'Niveles educativos *',
                     subtitle: 'Selección con varias opciones',
                     options: const [
                       'Preescolar',
@@ -562,20 +748,17 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                     onChanged: (v) =>
                         setState(() => _state.educationLevels = v),
                   ),
-                  const SizedBox(height: 8),
-                  _RadioSelectField(
-                    label: 'Jornada Académica',
-                    subtitle: 'Única opción',
-                    options: const [
-                      'Jornada Única',
-                      'Mañana',
-                      'Tarde',
-                      'Mañana y Tarde',
-                    ],
-                    selected: _state.academicSchedule,
-                    onChanged: (v) =>
-                        setState(() => _state.academicSchedule = v),
-                  ),
+                  if (_showErrors && _state.educationLevels.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12, top: 4),
+                      child: Text(
+                        'Seleccione al menos un nivel educativo',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -588,18 +771,24 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                   PhotoCaptureField(
                     label: 'Foto Frente de la sede educativa',
                     imagePath: _state.photoFront,
+                    required: true,
+                    showError: _showErrors && (_state.photoFront == null || _state.photoFront!.isEmpty),
                     onImageSelected: (p) =>
                         setState(() => _state.photoFront = p),
                   ),
                   PhotoCaptureField(
                     label: 'Foto Aula 1',
                     imagePath: _state.photoClassroom1,
+                    required: true,
+                    showError: _showErrors && (_state.photoClassroom1 == null || _state.photoClassroom1!.isEmpty),
                     onImageSelected: (p) =>
                         setState(() => _state.photoClassroom1 = p),
                   ),
                   PhotoCaptureField(
                     label: 'Foto Aula 2',
                     imagePath: _state.photoClassroom2,
+                    required: true,
+                    showError: _showErrors && (_state.photoClassroom2 == null || _state.photoClassroom2!.isEmpty),
                     onImageSelected: (p) =>
                         setState(() => _state.photoClassroom2 = p),
                   ),
@@ -610,7 +799,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                         setState(() => _state.photoKitchen = p),
                   ),
                   PhotoCaptureField(
-                    label: 'Foto Comedor',
+                    label: 'Foto Comedor (Si aplica)',
                     imagePath: _state.photoDiningRoom,
                     onImageSelected: (p) =>
                         setState(() => _state.photoDiningRoom = p),
@@ -618,6 +807,8 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                   PhotoCaptureField(
                     label: 'Foto baño principal de la sede educativa',
                     imagePath: _state.photoBathroom,
+                    required: true,
+                    showError: _showErrors && (_state.photoBathroom == null || _state.photoBathroom!.isEmpty),
                     onImageSelected: (p) =>
                         setState(() => _state.photoBathroom = p),
                   ),
@@ -630,6 +821,7 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
+                  key: const ValueKey('btn_next'),
                   onPressed: _onNext,
                   icon: const Icon(Icons.arrow_forward_rounded),
                   label: const Text(
@@ -714,6 +906,9 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
     required String hint,
     required IconData icon,
     required void Function(String?) onChanged,
+    bool enabled = true,
+    String Function(String item)? itemLabel,
+    bool searchable = false,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -727,6 +922,9 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
             onChanged: onChanged,
             hintText: hint,
             prefixIcon: icon,
+            enabled: enabled,
+            itemLabel: itemLabel,
+            searchable: searchable,
           ),
           if (_showErrors && value == null)
             Padding(
@@ -743,65 +941,10 @@ class _Phase1InfoGeneralPageState extends State<Phase1InfoGeneralPage> {
       ),
     );
   }
-
-  // Widget helper: campo numérico requerido
-  Widget _buildNumericRequired({
-    required String label,
-    required TextEditingController ctrl,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: TextFormField(
-        controller: ctrl,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
-        decoration: InputDecoration(
-          label: Text.rich(
-            TextSpan(
-              text: label,
-              children: const [
-                TextSpan(
-                    text: ' *', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-          hintText: 'Numérico',
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
 }
 
 // ─── WIDGETS AUXILIARES ───────────────────────────────────────────────────────
 
-/// Encabezado de sección con fondo verde oscuro
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
 
 /// Fila de información de solo lectura (fecha, departamento)
 class _InfoDisplayRow extends StatelessWidget {
@@ -920,64 +1063,3 @@ class _MultiSelectField extends StatelessWidget {
   }
 }
 
-/// Grupo de radio buttons para selección única
-class _RadioSelectField extends StatelessWidget {
-  final String label;
-  final String? subtitle;
-  final List<String> options;
-  final String? selected;
-  final void Function(String?) onChanged;
-
-  const _RadioSelectField({
-    required this.label,
-    this.subtitle,
-    required this.options,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          const SizedBox(height: 6),
-          ...options.map((opt) {
-            return RadioListTile<String>(
-              dense: true,
-              tileColor: Colors.transparent,
-              title: Text(opt, style: const TextStyle(fontSize: 14)),
-              value: opt,
-              groupValue: selected,
-              activeColor: AppTheme.primaryColor,
-              contentPadding: EdgeInsets.zero,
-              onChanged: onChanged,
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}

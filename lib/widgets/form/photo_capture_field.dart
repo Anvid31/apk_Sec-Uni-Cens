@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class PhotoCaptureField extends StatefulWidget {
   final String label;
@@ -9,6 +10,7 @@ class PhotoCaptureField extends StatefulWidget {
   final void Function(String?) onImageSelected;
   final String? hintText;
   final bool required;
+  final bool showError;
 
   const PhotoCaptureField({
     super.key,
@@ -17,6 +19,7 @@ class PhotoCaptureField extends StatefulWidget {
     required this.onImageSelected,
     this.hintText,
     this.required = false,
+    this.showError = false,
   });
 
   @override
@@ -182,6 +185,16 @@ class _PhotoCaptureFieldState extends State<PhotoCaptureField> {
     );
   }
 
+  /// Copia la foto de la caché de image_picker a documentos de la app.
+  /// Android puede vaciar la caché y la encuesta pendiente perdería la foto.
+  Future<String> _persist(XFile file) async {
+    final dir = Directory('${(await getApplicationDocumentsDirectory()).path}/fotos');
+    await dir.create(recursive: true);
+    final dest = '${dir.path}/${DateTime.now().microsecondsSinceEpoch}.jpg';
+    await File(file.path).copy(dest);
+    return dest;
+  }
+
   Future<void> _takePicture() async {
     if (_isLoading) return;
     
@@ -200,7 +213,9 @@ class _PhotoCaptureFieldState extends State<PhotoCaptureField> {
         );
 
         if (photo != null && mounted) {
-          widget.onImageSelected(photo.path);
+          final saved = await _persist(photo);
+          if (!mounted) return;
+          widget.onImageSelected(saved);
           _showSuccessMessage('Foto capturada exitosamente');
         }
       } on PlatformException catch (e) {
@@ -258,7 +273,9 @@ class _PhotoCaptureFieldState extends State<PhotoCaptureField> {
         );
 
         if (image != null && mounted) {
-          widget.onImageSelected(image.path);
+          final saved = await _persist(image);
+          if (!mounted) return;
+          widget.onImageSelected(saved);
           _showSuccessMessage('Imagen seleccionada exitosamente');
         }
       } on PlatformException catch (e) {
@@ -396,9 +413,16 @@ class _PhotoCaptureFieldState extends State<PhotoCaptureField> {
             width: double.infinity,
             height: 200,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(
+                color: (widget.showError && (widget.imagePath == null || widget.imagePath!.isEmpty))
+                    ? Colors.red.shade400
+                    : Colors.grey.shade300,
+                width: (widget.showError && (widget.imagePath == null || widget.imagePath!.isEmpty)) ? 2 : 1,
+              ),
               borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
+              color: (widget.showError && (widget.imagePath == null || widget.imagePath!.isEmpty))
+                  ? Colors.red.shade50
+                  : Colors.grey.shade50,
             ),
             child: _isLoading
                 ? const Center(

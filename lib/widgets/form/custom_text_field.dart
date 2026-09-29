@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../config/tokens.dart';
 
 class CustomTextField extends StatefulWidget {
   final String label;
   final String? hintText;
+  final String? helperText;
+  final int helperMaxLines;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
@@ -20,6 +23,8 @@ class CustomTextField extends StatefulWidget {
     super.key,
     required this.label,
     this.hintText,
+    this.helperText,
+    this.helperMaxLines = 4,
     this.controller,
     this.keyboardType,
     this.validator,
@@ -41,8 +46,6 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
-
-  static const _focusColor = Color(0xFF4CAF50);
 
   @override
   void initState() {
@@ -66,29 +69,31 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = _isFocused ? _focusColor : Colors.grey.shade600;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final focusColor = scheme.primary;
+    final iconColor = _isFocused ? focusColor : scheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: Insets.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            padding: const EdgeInsets.only(left: Insets.xs, bottom: 6),
             child: RichText(
               text: TextSpan(
                 text: widget.label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _isFocused ? _focusColor : const Color(0xFF424242),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: _isFocused ? focusColor : scheme.onSurface,
                 ),
                 children: [
-                  if (widget.showRequiredIndicator ?? widget.validator != null)
-                    const TextSpan(
+                  // Sin validator propio aplica el de "requerido" (ver abajo).
+                  if (widget.showRequiredIndicator ?? widget.validator == null)
+                    TextSpan(
                       text: ' *',
                       style: TextStyle(
-                        color: Colors.red,
+                        color: scheme.error,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -105,18 +110,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
             obscureText: widget.obscureText,
             enabled: widget.enabled,
             focusNode: _focusNode,
-            style: const TextStyle(
-              fontSize: 16,
+            style: theme.textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2C3E50),
             ),
             decoration: InputDecoration(
               hintText:
                   widget.hintText ?? 'Ingrese ${widget.label.toLowerCase()}',
-              hintStyle: TextStyle(
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w400,
-              ),
+              helperText: widget.helperText,
+              helperMaxLines: widget.helperMaxLines,
+              helperStyle: theme.textTheme.bodySmall,
               prefixIcon: widget.prefixIcon != null
                   ? Icon(widget.prefixIcon, color: iconColor, size: 22)
                   : null,
@@ -127,33 +129,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     )
                   : null,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: widget.prefixIcon != null ? 12 : 20,
-                vertical: widget.maxLines! > 1 ? 16 : 14,
+                horizontal: widget.prefixIcon != null ? Insets.md : Insets.xl,
+                vertical: (widget.maxLines ?? 1) > 1 ? Insets.lg : 14,
               ),
               filled: true,
               fillColor: widget.enabled
-                  ? (_isFocused ? Colors.white : Colors.grey.shade50)
-                  : Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-                borderSide: BorderSide(color: _focusColor, width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade400),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade400, width: 2),
-              ),
+                  ? (_isFocused
+                      ? scheme.surfaceContainerLowest
+                      : scheme.surfaceContainerHighest.withValues(alpha: 0.45))
+                  : scheme.surfaceContainer,
             ),
             validator: widget.validator ??
                 (value) {

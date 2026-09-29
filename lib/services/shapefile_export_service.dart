@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../utils/survey_shapefile_flatten.dart';
-import 'postgres_service.dart';
+import 'supabase_service.dart';
 
 /// Exporta encuestas de caracterización a Shapefile (punto, EPSG:4326).
 ///
@@ -18,7 +18,7 @@ class ShapefileExportService {
   static Future<String?> exportFromDatabase({
     String fileName = 'caracterizacion_sedes',
   }) async {
-    final rows = await PostgresService.querySurveysForExport();
+    final rows = await SupabaseService.querySurveysForExport();
     if (rows.isEmpty) {
       print('⚠️ ShapefileExportService: no hay registros en la base de datos');
       return null;

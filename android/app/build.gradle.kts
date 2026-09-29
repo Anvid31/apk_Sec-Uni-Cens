@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.example.caracterizacion_cens"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         // Configuración para CaracT Móvil - CENS
-        applicationId = "com.example.caracterizacion_cens"
+        applicationId = "com.cens.caracterizacion"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion  // Aumentado para compatibilidad con image_picker
@@ -76,6 +76,8 @@ android {
             )
         }
         debug {
+            // Se instala al lado de la versión de producción sin pisar sus datos.
+            applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = true
         }

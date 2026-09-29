@@ -1,5 +1,6 @@
 import '../models/unified_survey_state.dart';
 import 'auto_sync_service.dart';
+import 'storage_service.dart';
 
 /// Resultado del envío de un formulario unificado (4 fases).
 class UnifiedSubmissionResult {
@@ -33,6 +34,10 @@ class UnifiedSubmissionService {
     state.submissionStatus =
         enqueueResult.synced ? 'sent' : 'pending';
     state.notify();
+
+    // Borrar el borrador local — el formulario ya está en la cola de envío.
+    // Va DESPUÉS de notify(): notify() guarda el borrador y lo revivía.
+    await StorageService.clearDraft();
 
     return UnifiedSubmissionResult(
       surveyId: surveyId,

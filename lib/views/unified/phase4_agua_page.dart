@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/unified_survey_state.dart';
+import '../../utils/draft_autosave.dart';
+import '../../widgets/form/yes_no_buttons.dart';
 import '../../widgets/layout/enhanced_form_container.dart';
 import '../../utils/form_navigator.dart';
-import '../../config/theme.dart';
-import '../../services/unified_submission_service.dart';
+import 'phase5_riesgo_page.dart';
 
 class Phase4AguaPage extends StatefulWidget {
   const Phase4AguaPage({super.key});
@@ -14,9 +15,16 @@ class Phase4AguaPage extends StatefulWidget {
   State<Phase4AguaPage> createState() => _Phase4AguaPageState();
 }
 
-class _Phase4AguaPageState extends State<Phase4AguaPage> {
+class _Phase4AguaPageState extends State<Phase4AguaPage>
+    with DraftAutosave<Phase4AguaPage> {
+  @override
+  UnifiedSurveyState get draftState => _s;
+
+  @override
+  void syncDraftToState() => _saveToState();
+
   late UnifiedSurveyState _s;
-  bool _isSaving = false;
+  bool _showErrors = false;
 
   // text controllers
   final _cantHidratCtrl = TextEditingController();
@@ -197,6 +205,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
   void initState() {
     super.initState();
     _s = Provider.of<UnifiedSurveyState>(context, listen: false);
+    startDraftAutosave();
     _cantHidratCtrl.text = _s.cantidadPuntosHidratacion ?? '';
     _totalSanitCtrl.text = _s.totalSanitariosOrinales ?? '';
     _cantNinasCtrl.text = _s.cantSanitariosNinas ?? '';
@@ -234,69 +243,103 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
     _s.observacionesASH = _observacionesCtrl.text.trim().isNotEmpty ? _observacionesCtrl.text.trim() : null;
   }
 
-  Future<void> _onFinish() async {
+  void _onNext() {
     _saveToState();
-    _s.notify();
-    setState(() => _isSaving = true);
-    try {
-      final result = await UnifiedSubmissionService.submit(_s);
-      _s.reset();
 
-      if (!mounted) return;
+    final missing = [
+      for (final e in _required.entries)
+        if (e.value) e.key,
+    ];
 
-      await _showSubmissionDialog(result);
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            backgroundColor: Colors.red,
+    if (missing.isNotEmpty) {
+      setState(() => _showErrors = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Complete los campos requeridos: ${missing.take(4).join(', ')}'
+            '${missing.length > 4 ? ' y ${missing.length - 4} más' : ''}',
           ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
+
+    _s.notify();
+    FormNavigator.pushForm(context, const Phase5RiesgoPage(), stepNumber: 5);
   }
 
-  Future<void> _showSubmissionDialog(UnifiedSubmissionResult result) async {
-    final synced = result.syncedToDatabase;
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              synced ? Icons.cloud_done : Icons.cloud_upload,
-              color: synced ? AppTheme.primaryColor : Colors.orange,
-              size: 32,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                synced ? 'Formulario enviado' : 'Formulario guardado',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          synced
-              ? 'La información se guardó en la base de datos correctamente.'
-              : 'La información quedó guardada en este dispositivo. '
-                  'Se enviará automáticamente a la base de datos cuando haya conexión.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Aceptar'),
-          ),
-        ],
-      ),
-    );
-  }
+  bool _empty(TextEditingController c) => c.text.trim().isEmpty;
+
+  bool get _hayActividadesPromocion =>
+      _s.actividadesPromocionASH.isNotEmpty &&
+      !_s.actividadesPromocionASH.contains('No se realizan');
+
+  /// Pregunta obligatoria → falta respuesta. Solo incluye las visibles.
+  Map<String, bool> get _required => {
+        '¿Tiene acceso a agua?': _s.tieneAccesoAgua == null,
+        if (_s.tieneAccesoAgua == true) ...{
+          'Fuente de abastecimiento': _s.fuenteAbastecimiento.isEmpty,
+          'Frecuencia del agua': _s.frecuenciaAgua == null,
+          'Calidad del agua': _s.calidadAgua == null,
+        },
+        'Tanque de almacenamiento': _s.tieneTanqueAlmacenamiento == null,
+        if (_s.tieneTanqueAlmacenamiento == true) ...{
+          'Material de tanques': _s.materialTanques.isEmpty,
+          'Capacidad de tanques': _s.capacidadTanques == null,
+        },
+        'Estado red de acueducto': _s.estadoRedAcueducto == null,
+        'Agua potable': _s.tieneAguaPotable == null,
+        if (_s.tieneAguaPotable == 'si')
+          'Tratamiento del agua': _s.tratamientoAgua.isEmpty,
+        'Puntos de hidratación': _s.tienePuntosHidratacion == null,
+        if (_s.tienePuntosHidratacion == true)
+          'Cantidad de puntos de hidratación': _empty(_cantHidratCtrl),
+        'Dispositivo de saneamiento': _s.dispositivoSaneamiento == null,
+        if (_s.dispositivoSaneamiento == 'si')
+          'Tipo de saneamiento': _s.tipoSistSaneamiento.isEmpty,
+        'Estado red de desagüe': _s.estadoRedDesague == null,
+        'Total sanitarios y orinales': _empty(_totalSanitCtrl),
+        'Sanitarios separados': _s.sanitariosSeparados == null,
+        if (_s.sanitariosSeparados == true) ...{
+          'Sanitarios para niñas': _empty(_cantNinasCtrl),
+          'Sanitarios para niños': _empty(_cantNinosCtrl),
+        },
+        'Sanitarios que funcionan': _empty(_totalFuncionanCtrl),
+        'Instalaciones para discapacidad': _s.instalacionesDiscapacidad == null,
+        if (_s.instalacionesDiscapacidad == true)
+          'Cantidad instalaciones discapacidad': _empty(_cantDiscapCtrl),
+        'Instalaciones primera infancia': _s.instalacionesPrimeraInfancia == null,
+        if (_s.instalacionesPrimeraInfancia == true)
+          'Cantidad instalaciones primera infancia': _empty(_cantPrimerInfCtrl),
+        'Condiciones de sanitarios': _s.condicionesSanitarios.isEmpty,
+        'Gestión de desechos': _s.gestionDesechos.isEmpty,
+        'Lavado de manos': _s.sistemaLavadoManos.isEmpty,
+        'Llaves y lavamanos funcionales': _empty(_totalLlavesCtrl),
+        'Frecuencia de insumos': _s.frecuenciaInsumos == null,
+        'Información visual de higiene': _s.infoVisualHigiene == null,
+        'Comité ASH': _s.tieneComiteASH == null,
+        if (_s.tieneComiteASH == true)
+          'Capacitación del comité': _s.capacitacionComite == null,
+        'Actividades de promoción': _s.actividadesPromocionASH.isEmpty,
+        if (_hayActividadesPromocion) ...{
+          'Quién realiza la promoción': _s.quienPromocionASH.isEmpty,
+          'Frecuencia de actividades': _s.frecuenciaActividadesASH == null,
+        },
+        'Riesgos experimentados': _s.riesgosExperimentados.isEmpty,
+        if (_s.riesgosExperimentados.contains('Otro ¿Cuáles?'))
+          'Otro riesgo': _empty(_otroRiesgoCtrl),
+      };
+
+  /// Error inline bajo la pregunta [key] de [_required].
+  Widget _err(String key) => _showErrors && (_required[key] ?? false)
+      ? _fieldError()
+      : const SizedBox.shrink();
+
+  Widget _fieldError([String msg = 'Campo requerido']) => Padding(
+    padding: const EdgeInsets.only(left: 12, top: 2, bottom: 4),
+    child: Text(msg, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -304,13 +347,13 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
       title: 'Agua, Saneamiento e Higiene',
       subtitle: 'Si tiene hogar juvenil, considérelo en las respuestas',
       currentStep: 4,
-      totalSteps: 4,
-      isLastStep: true,
+      totalSteps: 5,
+      isLastStep: false,
       showPrevious: true,
-      isLoading: _isSaving,
+      isLoading: false,
       onPrevious: () => FormNavigator.popForm(context),
-      onNext: _onFinish,
-      nextLabel: 'Guardar',
+      onNext: _onNext,
+      nextLabel: 'Continuar',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -320,78 +363,90 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           const _SectionHeader('AGUA'),
           const SizedBox(height: 12),
 
-          _buildYesNo('¿El establecimiento educativo tiene acceso a agua?',
+          _buildYesNo('¿El establecimiento educativo tiene acceso a agua? *',
               _s.tieneAccesoAgua,
               (v) => setState(() => _s.tieneAccesoAgua = v)),
+          if (_showErrors && _s.tieneAccesoAgua == null) _fieldError(),
 
           if (_s.tieneAccesoAgua == true) ...[
             const SizedBox(height: 14),
             _buildMultiCheck(
-              '¿Cuál es la fuente de abastecimiento de la sede? (máx. 2)',
+              '¿Cuál es la fuente de abastecimiento de la sede? (máx. 2) *',
               _fuenteOpts, _s.fuenteAbastecimiento, maxSelect: 2,
               onChanged: (v) => setState(() => _s.fuenteAbastecimiento = v),
             ),
+            _err('Fuente de abastecimiento'),
             const SizedBox(height: 14),
-            _buildSingleSelect('¿Con qué frecuencia llega el agua a la sede?',
+            _buildSingleSelect('¿Con qué frecuencia llega el agua a la sede? *',
                 _frecuenciaAgua, _s.frecuenciaAgua,
                 (v) => setState(() => _s.frecuenciaAgua = v)),
+            _err('Frecuencia del agua'),
             const SizedBox(height: 14),
             _buildSingleSelect(
-                '¿Cómo describe la calidad del agua que llega?',
+                '¿Cómo describe la calidad del agua que llega? *',
                 _calidadOpts, _s.calidadAgua,
                 (v) => setState(() => _s.calidadAgua = v)),
+            _err('Calidad del agua'),
           ],
 
           const SizedBox(height: 14),
-          _buildYesNo('¿Cuenta con tanque de almacenamiento de agua?',
+          _buildYesNo('¿Cuenta con tanque de almacenamiento de agua? *',
               _s.tieneTanqueAlmacenamiento,
               (v) => setState(() => _s.tieneTanqueAlmacenamiento = v)),
+          _err('Tanque de almacenamiento'),
 
           if (_s.tieneTanqueAlmacenamiento == true) ...[
             const SizedBox(height: 14),
             _buildMultiCheck(
-                '¿De qué material están hechos los tanques?',
+                '¿De qué material están hechos los tanques de almacenamiento de agua? *',
                 _materialOpts, _s.materialTanques,
                 onChanged: (v) => setState(() => _s.materialTanques = v)),
+            _err('Material de tanques'),
             const SizedBox(height: 14),
             _buildSingleSelect(
-                '¿Cuál es la capacidad aproximada de todos los tanques?',
+                '¿Cuál es la capacidad de almacenamiento aproximada de todos los tanques de agua en la sede? *',
                 _capacidadOpts, _s.capacidadTanques,
                 (v) => setState(() => _s.capacidadTanques = v)),
+            _err('Capacidad de tanques'),
           ],
 
           const SizedBox(height: 14),
           _buildSingleSelect(
-              '¿Cuál es el estado de la red de Acueducto al interior de la sede?',
+              '¿Cuál es el estado de la red de Acueducto (Red de tuberías de Distribución) al interior de la sede? *',
               _estadoRedOpts, _s.estadoRedAcueducto,
               (v) => setState(() => _s.estadoRedAcueducto = v)),
+          _err('Estado red de acueducto'),
 
           const SizedBox(height: 14),
           _buildTriState(
-            '¿Cuenta con agua potable para consumo humano?',
+            '¿Cuenta con agua potable para consumo humano? *',
             opts: const ['Sí', 'No', 'No sabe'],
             values: const ['si', 'no', 'no_sabe'],
             value: _s.tieneAguaPotable,
             onChanged: (v) => setState(() => _s.tieneAguaPotable = v),
           ),
+          _err('Agua potable'),
 
           if (_s.tieneAguaPotable == 'si') ...[
             const SizedBox(height: 14),
             _buildMultiCheck(
-                '¿Cuál es el método usado para el tratamiento del agua?',
+                '¿Cuál es el método usado para el tratamiento del agua? *',
                 _tratamientoOpts, _s.tratamientoAgua,
                 onChanged: (v) => setState(() => _s.tratamientoAgua = v)),
+            _err('Tratamiento del agua'),
           ],
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Existen puntos de hidratación en el establecimiento?',
+              '¿Existen puntos de hidratación en el establecimiento? *',
               _s.tienePuntosHidratacion,
               (v) => setState(() => _s.tienePuntosHidratacion = v)),
+          _err('Puntos de hidratación'),
 
           if (_s.tienePuntosHidratacion == true) ...[
             const SizedBox(height: 10),
-            _numField('¿Cuántos puntos de hidratación?', _cantHidratCtrl),
+            _numField('¿Cuántos puntos de hidratación? *', _cantHidratCtrl),
+            _err('Cantidad de puntos de hidratación'),
           ],
 
           const SizedBox(height: 20),
@@ -403,82 +458,96 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           const SizedBox(height: 12),
 
           _buildRadioList(
-            '¿El establecimiento cuenta con algún dispositivo de saneamiento?',
+            '¿El establecimiento cuenta con algún dispositivo de saneamiento para la población estudiantil? *',
             _dispositivoSanOpts, _dispositivoSanValues,
             _s.dispositivoSaneamiento,
             (v) => setState(() => _s.dispositivoSaneamiento = v),
           ),
+          if (_showErrors && _s.dispositivoSaneamiento == null) _fieldError(),
 
           if (_s.dispositivoSaneamiento == 'si') ...[
             const SizedBox(height: 14),
-            _buildMultiCheck('¿Qué tipo de sistema de saneamiento tiene?',
+            _buildMultiCheck('¿Qué tipo de sistema de saneamiento tiene? *',
                 _tipoSanOpts, _s.tipoSistSaneamiento,
                 onChanged: (v) => setState(() => _s.tipoSistSaneamiento = v)),
+            _err('Tipo de saneamiento'),
           ],
 
           const SizedBox(height: 14),
           _buildSingleSelect(
-              '¿Cuál es el estado de la red de tuberías de desagüe?',
+              '¿Cuál es el estado de la red de tuberías de desagüe dentro del establecimiento educativo? *',
               _estadoRedOpts, _s.estadoRedDesague,
               (v) => setState(() => _s.estadoRedDesague = v)),
+          _err('Estado red de desagüe'),
 
           const SizedBox(height: 14),
-          _numField('Número total de sanitarios y orinales', _totalSanitCtrl),
+          _numField('¿Número total de sanitarios y orinales con los que cuenta el establecimiento educativo? *', _totalSanitCtrl),
+          _err('Total sanitarios y orinales'),
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Hay unidades sanitarias separadas para niños y niñas?',
+              '¿Hay unidades sanitarias separadas para niños y niñas en el establecimiento educativo? *',
               _s.sanitariosSeparados,
               (v) => setState(() => _s.sanitariosSeparados = v)),
+          _err('Sanitarios separados'),
 
           if (_s.sanitariosSeparados == true) ...[
             const SizedBox(height: 10),
-            _numField('Número de sanitarios para niñas', _cantNinasCtrl),
+            _numField('Número de sanitarios para niñas *', _cantNinasCtrl),
+            _err('Sanitarios para niñas'),
             const SizedBox(height: 10),
-            _numField('Número de sanitarios y orinales para niños', _cantNinosCtrl),
+            _numField('Número de sanitarios y orinales para niños *', _cantNinosCtrl),
+            _err('Sanitarios para niños'),
           ],
 
           const SizedBox(height: 14),
           _numField(
-              'N° total de sanitarios y orinales que funcionan correctamente',
+              'N° total de sanitarios y orinales que funcionan correctamente (Sirven las llaves, les llega el agua y descargan el agua) *',
               _totalFuncionanCtrl),
+          _err('Sanitarios que funcionan'),
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Existen instalaciones sanitarias adaptadas para personas con discapacidad?',
+              '¿Existen instalaciones sanitarias adaptadas para personas con discapacidad? *',
               _s.instalacionesDiscapacidad,
               (v) => setState(() => _s.instalacionesDiscapacidad = v)),
+          _err('Instalaciones para discapacidad'),
 
           if (_s.instalacionesDiscapacidad == true) ...[
             const SizedBox(height: 10),
-            _numField('¿Cuántas instalaciones destinadas a personas con discapacidad?',
+            _numField('¿Cuántas instalaciones destinadas a personas con discapacidad? *',
                 _cantDiscapCtrl),
+            _err('Cantidad instalaciones discapacidad'),
           ],
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Existen instalaciones sanitarias adaptadas para niños de primera infancia?',
+              '¿Existen instalaciones sanitarias adaptadas para niños de primera infancia? *',
               _s.instalacionesPrimeraInfancia,
               (v) => setState(() => _s.instalacionesPrimeraInfancia = v)),
+          _err('Instalaciones primera infancia'),
 
           if (_s.instalacionesPrimeraInfancia == true) ...[
             const SizedBox(height: 10),
             _numField(
-                '¿Cuántas instalaciones para niños/as de primera infancia?',
+                '¿Cuántas instalaciones estan destinadas a niños/as de primera infancia? *',
                 _cantPrimerInfCtrl),
+            _err('Cantidad instalaciones primera infancia'),
           ],
 
           const SizedBox(height: 14),
           _buildMultiCheck(
-              '¿Las unidades sanitarias cuentan con? (selección múltiple)',
+              '¿Las unidades sanitarias cuentan con? (selección múltiple) *',
               _condSanitariosOpts, _s.condicionesSanitarios,
               onChanged: (v) => setState(() => _s.condicionesSanitarios = v)),
+          _err('Condiciones de sanitarios'),
 
           const SizedBox(height: 14),
           _buildMultiCheck(
-              '¿La sede cuenta con gestión de desechos sólidos?',
+              '¿La sede cuenta con gestión de desechos sólidos (recogida y eliminación de residuos), indique cual? *',
               _gestionDesechosOpts, _s.gestionDesechos,
               onChanged: (v) => setState(() => _s.gestionDesechos = v)),
+          _err('Gestión de desechos'),
 
           const SizedBox(height: 20),
 
@@ -488,59 +557,68 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           const _SectionHeader('HIGIENE'),
           const SizedBox(height: 12),
 
-          _buildMultiCheck('¿Con qué tipo de sistema de lavado de manos cuenta?',
+          _buildMultiCheck('¿Con qué tipo de sistema de lavado de manos cuenta? *',
               _lavadoManoOpts, _s.sistemaLavadoManos,
               onChanged: (v) => setState(() => _s.sistemaLavadoManos = v)),
+          _err('Lavado de manos'),
 
           const SizedBox(height: 14),
           _numField(
-              'Número total de llaves y lavamanos funcionales',
+              'Número total de llaves y lavamanos funcionales (Sirven las llaves y les llega el agua) *',
               _totalLlavesCtrl),
+          _err('Llaves y lavamanos funcionales'),
 
           const SizedBox(height: 14),
           _buildSingleSelect(
-              '¿Con qué frecuencia cuentan los baños con papel higiénico y jabón líquido?',
+              '¿Con qué frecuencia cuentan los baños y lavamanos con papel higiénico y jabón líquido? *',
               _frecuenciaInsumosOpts, _s.frecuenciaInsumos,
               (v) => setState(() => _s.frecuenciaInsumos = v)),
+          _err('Frecuencia de insumos'),
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Hay información visual sobre hábitos y promoción de la higiene?',
+              '¿Hay información visual sobre hábitos y promoción de la higiene? *',
               _s.infoVisualHigiene,
               (v) => setState(() => _s.infoVisualHigiene = v)),
+          _err('Información visual de higiene'),
 
           const SizedBox(height: 14),
           _buildYesNo(
-              '¿Hay un comité o grupo activo encargado de actividades de agua, saneamiento e higiene?',
+              '¿Hay un comité o grupo activo encargado de actividades de agua, saneamiento e higiene? *',
               _s.tieneComiteASH,
               (v) => setState(() => _s.tieneComiteASH = v)),
+          _err('Comité ASH'),
 
           if (_s.tieneComiteASH == true) ...[
             const SizedBox(height: 14),
             _buildSingleSelect(
-                '¿El comité se encuentra capacitado en operación y mantenimiento?',
+                '¿El comité o grupo conformado se encuentra capacitado en operación y mantenimiento de los sistemas de agua y saneamiento en el establecimiento educativo? *',
                 _capacitacionComiteOpts, _s.capacitacionComite,
                 (v) => setState(() => _s.capacitacionComite = v)),
+            _err('Capacitación del comité'),
           ],
 
           const SizedBox(height: 14),
           _buildMultiCheck(
-              '¿Qué actividades de promoción en agua, saneamiento e higiene se realizan?',
+              '¿Qué actividades de promoción en agua, saneamiento e higiene se realizan? *',
               _actividadesPromocionOpts, _s.actividadesPromocionASH,
               onChanged: (v) => setState(() => _s.actividadesPromocionASH = v)),
+          _err('Actividades de promoción'),
 
           if (_s.actividadesPromocionASH.isNotEmpty &&
               !_s.actividadesPromocionASH.contains('No se realizan')) ...[
             const SizedBox(height: 14),
             _buildMultiCheck(
-                '¿Quién lleva a cabo estas actividades de promoción?',
+                '¿Quién lleva a cabo estas actividades de promoción? *',
                 _quienPromocionOpts, _s.quienPromocionASH,
                 onChanged: (v) => setState(() => _s.quienPromocionASH = v)),
+            _err('Quién realiza la promoción'),
             const SizedBox(height: 14),
             _buildSingleSelect(
-                '¿Con qué frecuencia se realizan estas actividades?',
+                '¿Con qué frecuencia se realizan estas actividades? *',
                 _frecuenciaActOpts, _s.frecuenciaActividadesASH,
                 (v) => setState(() => _s.frecuenciaActividadesASH = v)),
+            _err('Frecuencia de actividades'),
           ],
 
           const SizedBox(height: 20),
@@ -552,24 +630,37 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           const SizedBox(height: 12),
 
           _buildMultiCheck(
-              '¿En el último año, ha experimentado la IE alguno de estos riesgos?',
+              '¿En el último año, ha experimentado la IE alguno de estos riesgos? *',
               _riesgosOpts, _s.riesgosExperimentados,
               onChanged: (v) => setState(() => _s.riesgosExperimentados = v)),
+          _err('Riesgos experimentados'),
 
           if (_s.riesgosExperimentados.contains('Otro ¿Cuáles?')) ...[
             const SizedBox(height: 10),
             TextFormField(
               controller: _otroRiesgoCtrl,
-              decoration: _inputDecor('39.1 Otro ¿Cuál?'),
+              decoration: _inputDecor('Otro ¿Cuál? *'),
             ),
+            _err('Otro riesgo'),
           ],
 
           const SizedBox(height: 14),
           TextFormField(
             controller: _observacionesCtrl,
             maxLines: 4,
-            decoration: _inputDecor(
-              'Observaciones sobre el estado de los servicios de agua, saneamiento e higiene',
+            decoration: InputDecoration(
+              helperText:
+                  '¿Podría proporcionar información adicional o hacer observaciones sobre el estado y la calidad de los servicios de agua, saneamiento e higiene en la sede educativa?',
+              helperMaxLines: 5,
+              labelText: 'Observaciones',
+              hintText: 'Texto libre',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -587,11 +678,28 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
             const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       );
 
-  Widget _numField(String label, TextEditingController ctrl) => TextFormField(
-        controller: ctrl,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: _inputDecor(label),
+  Widget _numField(String label, TextEditingController ctrl) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style:
+                const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              hintText: 'Numérico',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 12),
+            ),
+          ),
+        ],
       );
 
   Widget _buildYesNo(
@@ -599,18 +707,7 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
     bool? value,
     void Function(bool) onChanged,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-        const SizedBox(height: 4),
-        Row(children: [
-          _radioBtn('Sí', true, value, onChanged),
-          const SizedBox(width: 24),
-          _radioBtn('No', false, value, onChanged),
-        ]),
-      ],
-    );
+    return YesNoButtons(label: label, value: value, onChanged: onChanged);
   }
 
   Widget _buildTriState(
@@ -727,22 +824,6 @@ class _Phase4AguaPageState extends State<Phase4AguaPage> {
           );
         }),
       ],
-    );
-  }
-
-  Widget _radioBtn<T>(String label, T opt, T? group, void Function(T) onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(opt),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Radio<T>(
-          value: opt,
-          groupValue: group,
-          onChanged: (v) { if (v != null) onChanged(v); },
-          activeColor: _green,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        Text(label, style: const TextStyle(fontSize: 14)),
-      ]),
     );
   }
 }

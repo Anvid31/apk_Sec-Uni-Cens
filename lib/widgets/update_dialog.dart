@@ -3,8 +3,11 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:open_file/open_file.dart';
 import '../services/update_service.dart';
+
+const _installChannel = MethodChannel('com.cens.app.movil/install');
 
 /// Diálogo de actualización disponible.
 ///
@@ -36,6 +39,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   _Phase _phase = _Phase.available;
   double _progress = 0;
   String? _errorMessage;
+  String? _apkPath; // guardado para reintentar después de conceder permiso
   CancelToken? _cancelToken;
 
   @override
@@ -93,16 +97,57 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
   }
 
-  Future<void> _installApk(String path) async {
+  Future<bool> _canInstall() async {
     try {
-      if (!Platform.isAndroid) return;
-      final result = await OpenFile.open(path, type: 'application/vnd.android.package-archive');
-      print('📦 UpdateDialog: open_file result: ${result.message}');
+      return await _installChannel.invokeMethod<bool>('canInstall') ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> _openInstallSettings() async {
+    try {
+      await _installChannel.invokeMethod('openInstallSettings');
+    } catch (_) {}
+  }
+
+  Future<void> _installApk(String path) async {
+    if (!Platform.isAndroid) return;
+    _apkPath = path;
+
+    // Verificar permiso de instalación
+    if (!await _canInstall()) {
+      if (!mounted) return;
+      setState(() => _phase = _Phase.needsPermission);
+      return;
+    }
+
+    try {
+      final result = await OpenFile.open(
+        path,
+        type: 'application/vnd.android.package-archive',
+      );
+      if (result.type != ResultType.done && mounted) {
+        final msg = result.message.toLowerCase();
+        final isConflict = msg.contains('conflict') ||
+            msg.contains('incompatible') ||
+            msg.contains('signatures');
+        setState(() {
+          _phase = _Phase.error;
+          _errorMessage = isConflict
+              ? 'Conflicto de versión: la firma del APK no coincide con la instalada.\n\n'
+                '1. Desinstala la app actual en Ajustes → Aplicaciones → CaracT Móvil → Desinstalar\n'
+                '2. Vuelve a abrir esta pantalla e instala de nuevo.'
+              : result.message.isNotEmpty
+                  ? result.message
+                  : 'El sistema no pudo abrir el instalador.';
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
           _phase = _Phase.error;
-          _errorMessage = 'No se pudo abrir el instalador: $e';
+          _errorMessage = 'Error al abrir instalador: $e';
         });
       }
     }
@@ -170,6 +215,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
         return _buildDownloadingBody();
       case _Phase.ready:
         return _buildReadyBody();
+      case _Phase.needsPermission:
+        return _buildNeedsPermissionBody();
       case _Phase.error:
         return _buildErrorBody();
     }
@@ -257,6 +304,32 @@ class _UpdateDialogState extends State<UpdateDialog> {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14),
         ),
+        SizedBox(height: 10),
+        Text(
+          'Si el instalador no aparece, toca "Reintentar".',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNeedsPermissionBody() {
+    return const Column(
+      children: [
+        Icon(Icons.security_outlined, color: Colors.orange, size: 40),
+        SizedBox(height: 10),
+        Text(
+          'Se necesita permiso para instalar aplicaciones.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Toca "Habilitar" para ir a Ajustes. Activa el interruptor y vuelve aquí.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: Colors.black54),
+        ),
       ],
     );
   }
@@ -277,6 +350,42 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
   Widget _buildActions() {
     switch (_phase) {
+      case _Phase.needsPermission:
+        return Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _cancel,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Después'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await _openInstallSettings();
+                  // Cuando el usuario vuelve, reintenta la instalación
+                  if (mounted && _apkPath != null) {
+                    setState(() => _phase = _Phase.ready);
+                    await _installApk(_apkPath!);
+                  }
+                },
+                icon: const Icon(Icons.settings_outlined, size: 18),
+                label: const Text('Habilitar'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: Colors.orange,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        );
+
       case _Phase.available:
         return Row(
           children: [
@@ -323,7 +432,32 @@ class _UpdateDialogState extends State<UpdateDialog> {
         );
 
       case _Phase.ready:
-        return const SizedBox.shrink();
+        return Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _cancel,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Después'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _apkPath != null ? () => _installApk(_apkPath!) : null,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        );
 
       case _Phase.error:
         return Row(
@@ -385,45 +519,36 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
   Color get _headerColor {
     switch (_phase) {
-      case _Phase.available:
-        return const Color(0xFF2E7D32); // verde oscuro
-      case _Phase.downloading:
-        return const Color(0xFF1565C0); // azul
-      case _Phase.ready:
-        return const Color(0xFF2E7D32);
-      case _Phase.error:
-        return const Color(0xFFC62828); // rojo
+      case _Phase.available:   return const Color(0xFF2E7D32);
+      case _Phase.downloading: return const Color(0xFF1565C0);
+      case _Phase.ready:       return const Color(0xFF2E7D32);
+      case _Phase.needsPermission: return const Color(0xFFE65100);
+      case _Phase.error:       return const Color(0xFFC62828);
     }
   }
 
   IconData get _headerIcon {
     switch (_phase) {
-      case _Phase.available:
-        return Icons.system_update_alt;
-      case _Phase.downloading:
-        return Icons.downloading;
-      case _Phase.ready:
-        return Icons.check_circle_outline;
-      case _Phase.error:
-        return Icons.error_outline;
+      case _Phase.available:   return Icons.system_update_alt;
+      case _Phase.downloading: return Icons.downloading;
+      case _Phase.ready:       return Icons.check_circle_outline;
+      case _Phase.needsPermission: return Icons.security_outlined;
+      case _Phase.error:       return Icons.error_outline;
     }
   }
 
   String get _headerTitle {
     switch (_phase) {
-      case _Phase.available:
-        return 'Actualización disponible\n${widget.info.releaseName}';
-      case _Phase.downloading:
-        return 'Descargando...';
-      case _Phase.ready:
-        return 'Lista para instalar';
-      case _Phase.error:
-        return 'Error al descargar';
+      case _Phase.available:   return 'Actualización disponible\n${widget.info.releaseName}';
+      case _Phase.downloading: return 'Descargando...';
+      case _Phase.ready:       return 'Lista para instalar';
+      case _Phase.needsPermission: return 'Permiso requerido';
+      case _Phase.error:       return 'Error';
     }
   }
 }
 
-enum _Phase { available, downloading, ready, error }
+enum _Phase { available, downloading, ready, needsPermission, error }
 
 extension on Color {
   Color get shade700 {

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../config/theme.dart';
-import '../services/shapefile_export_service.dart';
+import '../config/tokens.dart';
+import '../services/supabase_service.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
 import '../widgets/auto_sync_status_widget.dart';
+import 'auth/login_page.dart';
+import 'history_page.dart';
 import 'unified/phase1_info_general_page.dart';
 
 class SelectionPage extends StatefulWidget {
@@ -15,19 +17,42 @@ class SelectionPage extends StatefulWidget {
 }
 
 class _SelectionPageState extends State<SelectionPage> {
-  bool _exportingShapefile = false;
-
   @override
   void initState() {
     super.initState();
-    // Verificar actualizaciones después del primer frame
-    // para no bloquear la UI durante la carga inicial.
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+  }
+
+  Future<void> _onLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Seguro que deseas cerrar la sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await SupabaseService.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
   }
 
   Future<void> _checkForUpdate() async {
     try {
-      final info = await UpdateService.checkForUpdate();
+      final info = await UpdateService.checkForUpdate(force: true);
       if (info != null && mounted) {
         showUpdateDialog(context, info);
       }
@@ -36,137 +61,121 @@ class _SelectionPageState extends State<SelectionPage> {
     }
   }
 
-  Future<void> _exportShapefile() async {
-    setState(() => _exportingShapefile = true);
-    try {
-      final path = await ShapefileExportService.exportFromDatabase();
-      if (path == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay sedes con coordenadas en la base de datos.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al exportar Shapefile: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _exportingShapefile = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-    
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.secondaryColor, // Verde oscuro arriba
-              AppTheme.primaryColor,   // Verde claro abajo
+              scheme.secondary,
+              scheme.primary,
             ],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 40),
-              // Logo o Título
-              const Expanded(
+              // Botón de logout (solo si hay sesión activa)
+              if (SupabaseService.isAuthenticated)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: Insets.sm,
+                      right: Insets.md,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.logout,
+                        color: scheme.onPrimary.withValues(alpha: 0.75),
+                      ),
+                      tooltip: 'Cerrar sesión',
+                      onPressed: _onLogout,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: Insets.lg),
+              Expanded(
                 flex: 1,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.assignment_turned_in, size: 80, color: Colors.white),
-                    SizedBox(height: 20),
-                    Text(
-                      'CENS Caracterización',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                    Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 72,
+                      color: scheme.onPrimary,
+                    ),
+                    const SizedBox(height: Insets.xl),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: Insets.xl),
+                      child: Text(
+                        'Caracterización y Mapeo de Necesidades I.E.',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: scheme.onPrimary,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: Insets.sm),
                     Text(
                       'Seleccione el tipo de registro',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: scheme.onPrimary.withValues(alpha: 0.85),
                       ),
                     ),
                   ],
                 ),
               ),
-              
-              // Tarjetas de Selección
               Expanded(
                 flex: 2,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Insets.xl,
+                    vertical: Insets.xxl,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    borderRadius: Radii.sheet,
                   ),
                   child: Column(
                     children: [
                       const AutoSyncStatusWidget(compact: true),
-                      const SizedBox(height: 16),
-                      _buildSelectionCard(
-                        context,
+                      const SizedBox(height: Insets.lg),
+                      _HomeActionTile(
+                        key: const ValueKey('tile_formulario'),
                         title: 'Formulario de Caracterización',
-                        subtitle: 'Información general, dotación, energía y agua.',
+                        subtitle:
+                            'Información general, dotación, energía, agua y riesgo.',
                         icon: Icons.assignment_outlined,
-                        color: AppTheme.primaryColor,
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const Phase1InfoGeneralPage()),
+                              builder: (_) => const Phase1InfoGeneralPage(),
+                            ),
                           );
                         },
                       ),
-                      const SizedBox(height: 20),
-                      // Botón Exportar Shapefile
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _exportingShapefile ? null : _exportShapefile,
-                          icon: _exportingShapefile
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                                  ),
-                                )
-                              : const Icon(Icons.map_outlined),
-                          label: Text(_exportingShapefile
-                              ? 'Exportando...'
-                              : 'Exportar Shapefile'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
-                            side: const BorderSide(color: AppTheme.primaryColor),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                      const SizedBox(height: Insets.xl),
+                      _HomeActionTile(
+                        key: const ValueKey('tile_historial'),
+                        title: 'Historial',
+                        subtitle: 'Encuestas enviadas y pendientes.',
+                        icon: Icons.history_rounded,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HistoryPage(),
                           ),
                         ),
                       ),
@@ -180,58 +189,68 @@ class _SelectionPageState extends State<SelectionPage> {
       ),
     );
   }
+}
 
-  Widget _buildSelectionCard(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+class _HomeActionTile extends StatelessWidget {
+  const _HomeActionTile({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Material(
+      color: scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: Radii.card,
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: Radii.card,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(Insets.xl),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Insets.md),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: const BorderRadius.all(Radii.md),
                 ),
-                child: Icon(icon, color: color, size: 32),
+                child: Icon(icon, color: scheme.primary, size: 28),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: Insets.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
+                    Text(title, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: Insets.xs),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 16),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: scheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
